@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Chat surface · BawtHub · Architecture</title>
-<meta name="description" content="The chat surface in BawtHub: one rendering engine for every tool call from every agent backend. Diffs, parsed commands, MCP pills, streaming events, the lot." />
+<meta name="description" content="The chat surface in BawtHub: one rendering engine for every tool call from every agent backend. Diffs, parsed commands, MCP pills, streaming events." />
 <meta property="og:title" content="The chat surface — BawtHub" />
 <meta property="og:description" content="One rendering engine, every tool call. Diffs, commands, MCP pills, streamed live." />
 <link rel="preconnect" href="https://rsms.me/" />
@@ -27,9 +27,9 @@
 </header>
 <span data-rail></span>
 
-<main class="shell wide">
+<main class="shell">
 
-  <div class="page-head" style="max-width:1100px">
+  <div class="page-head">
     <div class="kicker"><span class="dot"></span> bawthub · chat surface</div>
     <h1 class="page-title">One render engine.<br/><em>Every tool call.</em></h1>
     <p class="lede">The chat surface is the dense, visible <b>output</b> of everything underneath. Every backend — the native tool loop, Claude Code, Codex, OpenClaw — emits tool events into a single stream, and the chat renders them through one shared component tree. Diffs. Parsed commands. SSH targets. MCP pills. Streaming partials. All shaped to be skimmable, foldable, and beautiful.</p>
@@ -40,77 +40,21 @@
     </div>
   </div>
 
-  <div class="hero-split">
-    <div>
-      <h3 style="margin-top:0">What's actually hard about this.</h3>
-      <p>Most chat UIs render strings. Tool-call chat UIs render <b>structured events</b> arriving out of order, sometimes interleaved, sometimes recovered after a reload. Each backend emits its own event shape — Claude Code's <code>tool_use</code> blocks, Codex's item-typed updates, OpenClaw's WS frames, the native loop's streamed deltas. The chat surface normalizes all of them into one event model, then renders.</p>
-      <p>The interesting work is in the <b>renderer</b>. Tool calls are first-class: not text dumps inside a bubble, but their own composable component with status, kind, command, output, and a chevron that folds the body. Bash gets a terminal-themed block. Edit gets a unified diff. SSH gets a parsed host pill and an inner command. MCP gets the magenta pill the agents use.</p>
-      <p>This page is half explanation, half live demo. Every block below is real HTML — not a screenshot. Click a chevron, fold a body, see how the components compose.</p>
-    </div>
-
-    <!-- Live tool-call demo card -->
-    <div class="chat-frame glass" aria-label="Tool-call rendering demo">
-      <div class="chat-head">
-        <div class="lhs">
-          <div class="dots"><span></span><span></span><span></span></div>
-          <div class="title"><b>loopy</b> · claude-sonnet</div>
-        </div>
-        <div class="rhs">session 7b3f · ✦ tools 8</div>
-      </div>
-      <div class="chat-body">
-        <div class="msg">
-          <div class="ava you">N</div>
-          <div>
-            <div class="who"><b>you</b> <span class="pill">web</span></div>
-            <div class="bubble">where's the deploy at? bump nginx if needed</div>
-          </div>
-        </div>
-        <div class="msg">
-          <div class="ava loopy">L</div>
-          <div>
-            <div class="who"><b>loopy</b> <span class="pill">memory · tools · 4 turns</span></div>
-            <div class="bubble">checking the repo and the live container.</div>
-            <div class="tc">
-              <div class="tc-head">
-                <div class="tc-status ok">✓</div>
-                <div class="tc-kind bash">Bash</div>
-                <div class="tc-cmd"><b>git log --oneline -3</b></div>
-                <div class="tc-size">0.42 KB</div>
-                <div class="tc-chev">▾</div>
-              </div>
-              <div class="tc-body terminal"><span class="prompt">$</span> <span class="out">git log --oneline -3</span>
-<span class="out">7cdd9ac</span> <span class="dim">architecture: build out 21 documentation pages</span>
-<span class="out">97e26e5</span> <span class="dim">deploy.sh: bounce push through echo for GitHub auth</span>
-<span class="out">118182a</span> <span class="dim">Flatten layout: serve repo root, move scripts under scripts/</span></div>
-            </div>
-            <div class="tc ssh">
-              <div class="tc-head">
-                <div class="tc-status ok">✓</div>
-                <div class="tc-kind ssh">SSH</div>
-                <div class="tc-cmd">
-                  <span class="ssh-host">unraid-lan</span>
-                  <span class="ssh-arrow">→</span>
-                  <span class="ssh-inner">docker ps --filter "name=bawthub-public"</span>
-                </div>
-                <div class="tc-size">0.18 KB</div>
-                <div class="tc-chev">▾</div>
-              </div>
-              <div class="tc-body terminal"><span class="out">NAMES                 STATUS       PORTS</span>
-<span class="out">bawthub-public-site   Up 6 hours</span></div>
-            </div>
-            <div class="bubble" style="margin-top:8px">live container is up. last commit is <code>7cdd9ac</code> from earlier. nginx looks fine — no restart needed.</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="shot">
+    <img src="/images/chat.jpg" alt="The BawtHub chat surface — message transcript with bot avatar and rendered tool calls" />
+    <div class="caption"><b>Live chat surface.</b> A real session. Each tool call gets a dedicated component with kind pill, status, parsed command, and a foldable body. More representative captures coming as the page evolves.</div>
   </div>
 
-  <h2><span class="num">01</span> The unified event model.</h2>
-  <p>Every backend reports tool activity through the same event shape. The chat surface doesn't know whether a <code>Bash</code> event came from the native tool loop or from a Claude Code subprocess — it only knows that a tool with kind <code>bash</code>, status <code>ok</code>, an args blob, and a results blob just landed.</p>
+  <h2><span class="num">01</span> What's actually hard about this.</h2>
+  <p>Most chat UIs render strings. Tool-call chat UIs render <b>structured events</b> arriving out of order, sometimes interleaved, sometimes recovered after a reload. Each backend emits its own event shape — Claude Code's <code>tool_use</code> blocks, Codex's item-typed updates, OpenClaw's WS frames, the native loop's streamed deltas. The chat surface normalizes all of them into one event model, then renders.</p>
+  <p>The interesting work is in the <b>renderer</b>. Tool calls are first-class: not text dumps inside a bubble, but their own composable component with status, kind, command, output, and a chevron that folds the body. Bash gets a terminal-themed block. Edit gets a unified diff. SSH gets a parsed host pill and an inner command. MCP gets the magenta pill the agents use. Errors flip the status dot red and surface the exit code in the headline so the most-asked questions never need a click.</p>
+
+  <h2><span class="num">02</span> The unified event model.</h2>
+  <p>Every backend reports tool activity through the same event shape. The chat surface doesn't know whether a <code>Bash</code> event came from the native tool loop or from a Claude Code subprocess — it only knows that a tool with kind <code>bash</code>, status <code>ok</code>, an args blob, and a result blob just landed.</p>
 
   <div class="diagram">
     <div class="diagram-title">Backends → unified event → renderer</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr) 32px 1fr 32px 1fr;gap:14px;align-items:center;font-size:13px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:stretch;font-size:13px">
       <div style="padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,209,255,.06);text-align:center">
         <div style="font-weight:600;color:#fff">Native loop</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px"><code>core/tool_loop.py</code></div>
@@ -127,340 +71,90 @@
         <div style="font-weight:600;color:#fff">OpenClaw</div>
         <div style="color:var(--muted);font-size:12px;margin-top:4px"><code>WS frames</code></div>
       </div>
-      <div style="text-align:center;color:var(--dim);font-size:18px;grid-column:1/5">↓ ↓ ↓ ↓</div>
-      <div style="grid-column:1/5;padding:18px;border-radius:14px;border:1px solid var(--line-strong);background:linear-gradient(135deg,rgba(79,209,255,.1),rgba(139,92,246,.1));text-align:center">
-        <div style="font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">OpenClawEvent — one shape</div>
-        <div style="font-family:var(--mono);font-size:12.5px;color:#dde7f7">{ kind, status, name, args, result, tokens, ts }</div>
-      </div>
-      <div style="grid-column:1/5;text-align:center;color:var(--dim);font-size:18px">↓</div>
-      <div style="grid-column:1/5;padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.3);text-align:center">
-        <div style="font-weight:600;color:#fff;font-size:14px">React renderer · ChatUI.tsx</div>
-        <div style="color:var(--muted);font-size:12px;margin-top:4px">~3500 lines · dispatches on <code>event.kind</code></div>
-      </div>
+    </div>
+    <div style="text-align:center;color:var(--dim);font-size:18px;margin:14px 0;letter-spacing:.5em">↓</div>
+    <div style="padding:18px;border-radius:14px;border:1px solid var(--line-strong);background:linear-gradient(135deg,rgba(79,209,255,.1),rgba(139,92,246,.1));text-align:center">
+      <div style="font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">OpenClawEvent — one shape</div>
+      <div style="font-family:var(--mono);font-size:12.5px;color:#dde7f7">{ kind, status, name, args, result, tokens, ts }</div>
+    </div>
+    <div style="text-align:center;color:var(--dim);font-size:18px;margin:14px 0;letter-spacing:.5em">↓</div>
+    <div style="padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.3);text-align:center">
+      <div style="font-weight:600;color:#fff;font-size:14px">React renderer · ChatUI.tsx</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px">~3500 lines · dispatches on <code>event.kind</code></div>
     </div>
   </div>
 
   <p>The unified shape is defined as <code>OpenClawEvent</code> in <code>llm_bawt/agent_backends/openclaw/events.py</code> (named for historical reasons — OpenClaw was the first bridge, and the shape stuck when Claude Code and Codex were retrofitted). The frontend imports the same shape via the generated Prisma + tRPC types. Renderers dispatch on <code>event.kind</code>; new tool kinds add a renderer without changing anything upstream.</p>
 
-  <h2><span class="num">02</span> Tool-call <em>renderings</em>, by kind.</h2>
-  <p>Every tool kind gets its own component, but they all share the same skeleton: <em>status dot</em>, <em>kind pill</em>, <em>headline</em>, <em>size</em>, <em>chevron</em>, and a body that's hidden by default for long output. Click any chevron below to fold/unfold.</p>
+  <h2><span class="num">03</span> Tool-call rendering — the design vocabulary.</h2>
+  <p>Every tool kind gets its own component, but they all share the same skeleton: <em>status dot</em>, <em>kind pill</em>, <em>headline</em>, <em>size</em>, <em>chevron</em>, and a body that's hidden by default for long output. The kind pill colour and the body styling are all that change between renderers.</p>
 
-  <!-- Bash + Edit + Read demo -->
-  <div class="chat-frame glass" style="margin:32px 0">
-    <div class="chat-head">
-      <div class="lhs">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <div class="title"><b>caid</b> · claude-sonnet · agent</div>
-      </div>
-      <div class="rhs">tools 3 · 18.2 KB out</div>
-    </div>
-    <div class="chat-body">
-      <div class="msg">
-        <div class="ava you">N</div>
-        <div>
-          <div class="who"><b>you</b></div>
-          <div class="bubble">switch the deploy script to use rsync instead of scp for the assets</div>
-        </div>
-      </div>
-      <div class="msg">
-        <div class="ava caid">C</div>
-        <div>
-          <div class="who"><b>caid</b> <span class="pill">claude-code</span></div>
-          <div class="bubble">reading the current script first.</div>
+  <table class="spec">
+    <thead><tr><th>Kind</th><th>Pill</th><th>Headline shows</th><th>Body</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>Bash</b></td>
+        <td><span class="pill green">Bash</span></td>
+        <td>Bolded binary + dimmed args; pipes collapsed</td>
+        <td>Black terminal-themed block; <code>$</code> prompt + output</td>
+      </tr>
+      <tr>
+        <td><b>Edit</b></td>
+        <td><span class="pill gold">Edit</span></td>
+        <td>File path + size delta (<code>+8 −3</code>)</td>
+        <td>Unified diff with <span style="color:var(--green)">add</span>/<span style="color:var(--red)">rm</span>/context line markers and the real hunk header</td>
+      </tr>
+      <tr>
+        <td><b>Read</b></td>
+        <td><span class="pill cyan">Read</span></td>
+        <td>File path + line count</td>
+        <td>Mono body with head-of-file slice; long files get an ellipsis-and-tail</td>
+      </tr>
+      <tr>
+        <td><b>Grep / Search</b></td>
+        <td><span class="pill violet">Search</span></td>
+        <td>Pattern + scope path + match count</td>
+        <td>Match list with file:line prefixes</td>
+      </tr>
+      <tr>
+        <td><b>SSH</b></td>
+        <td><span class="pill" style="background:rgba(255,139,79,.14);color:#ffb98a;border-color:rgba(255,139,79,.3)">SSH</span></td>
+        <td><b>Host pill</b> + <code>→</code> + the command actually run there</td>
+        <td>Whatever the inner command produced (often terminal)</td>
+      </tr>
+      <tr>
+        <td><b>MCP</b></td>
+        <td><span class="pill pink">MCP</span></td>
+        <td>Magenta pill with the namespaced tool name + dimmed args</td>
+        <td>Structured result; bolds, spans, and the tool's native shape</td>
+      </tr>
+    </tbody>
+  </table>
 
-          <div class="tc">
-            <div class="tc-head">
-              <div class="tc-status ok">✓</div>
-              <div class="tc-kind read">Read</div>
-              <div class="tc-cmd"><b>scripts/deploy.sh</b> · 51 lines</div>
-              <div class="tc-size">1.4 KB</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body" style="font-family:var(--mono);font-size:12px">  1  #!/usr/bin/env bash
-  2  set -euo pipefail
-  3  cd "$(dirname "$0")/.."
-…
- 38  echo "→ Pushing $AHEAD commit(s) to GitHub..."
- 39  git push origin HEAD
- 40  echo "→ Pulling on Unraid (10.0.0.99)..."
- 41  ssh unraid-lan 'cd /mnt/user/appdata/bawthub-public/site && git pull --ff-only origin main'
-…</div>
-          </div>
-
-          <div class="tc">
-            <div class="tc-head">
-              <div class="tc-status ok">✓</div>
-              <div class="tc-kind edit">Edit</div>
-              <div class="tc-cmd"><b>scripts/deploy.sh</b></div>
-              <div class="tc-size">+8 −3</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body diff">
-              <div class="diff-meta">@@ -39,6 +39,11 @@ ssh unraid-lan 'cd /mnt/user/appdata/bawthub-public/site &amp;&amp; git pull --ff-only origin main'</div>
-              <div class="diff-line ctx"><span class="mark"> </span><span class="code"># 5. Restart nginx — Unraid user-share can return ESTALE under nginx's</span></div>
-              <div class="diff-line ctx"><span class="mark"> </span><span class="code"># open-file cache. Restart is ~1s, idempotent.</span></div>
-              <div class="diff-line rm"><span class="mark">−</span><span class="code">echo "→ Restarting bawthub-public-site nginx..."</span></div>
-              <div class="diff-line rm"><span class="mark">−</span><span class="code">ssh unraid-lan 'docker restart bawthub-public-site >/dev/null'</span></div>
-              <div class="diff-line add"><span class="mark">+</span><span class="code"># Restart only if any non-script file changed in this pull</span></div>
-              <div class="diff-line add"><span class="mark">+</span><span class="code">echo "→ Reloading nginx (only on content changes)…"</span></div>
-              <div class="diff-line add"><span class="mark">+</span><span class="code">ssh unraid-lan 'docker exec bawthub-public-site nginx -s reload 2>/dev/null || \</span></div>
-              <div class="diff-line add"><span class="mark">+</span><span class="code">  docker restart bawthub-public-site >/dev/null'</span></div>
-              <div class="diff-line ctx"><span class="mark"> </span><span class="code"></span></div>
-              <div class="diff-line ctx"><span class="mark"> </span><span class="code">echo "✓ Deployed: https://bawthub.com/"</span></div>
-            </div>
-          </div>
-
-          <div class="tc">
-            <div class="tc-head">
-              <div class="tc-status run">●</div>
-              <div class="tc-kind bash">Bash</div>
-              <div class="tc-cmd"><b>./scripts/deploy.sh</b></div>
-              <div class="tc-size">streaming…</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body terminal"><span class="prompt">$</span> <span class="out">./scripts/deploy.sh</span>
-<span class="out">→ Pushing 1 commit(s) to GitHub...</span>
-<span class="out">  (bouncing via echo for auth)</span>
-<span class="dim">▌</span></div>
-          </div>
-
-          <div class="bubble" style="margin-top:8px">deploy is mid-run — streaming the output above as it happens. once it lands i'll verify the new reload path works.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <p>Three tool kinds visible above, each with its own treatment:</p>
-  <ul>
-    <li><b><span class="pill cyan">Read</span></b> — file name, line count, monospace body with a head-of-file slice. Long files get an ellipsis-and-tail.</li>
-    <li><b><span class="pill gold">Edit</span></b> — unified diff with <span style="color:var(--green)">add</span>/<span style="color:var(--red)">rm</span>/context line markers. Diff lines use the actual hunk header, not just a count.</li>
-    <li><b><span class="pill green">Bash</span></b> — terminal-themed body. The <code>●</code> status dot pulses while streaming. <code>streaming…</code> in the size slot becomes <code>2.4 KB</code> once the stream completes.</li>
-  </ul>
-
-  <h2><span class="num">03</span> The MCP pill.</h2>
-  <p>Tools that come in via the MCP server get a distinct rendering — a magenta pill with the full namespaced tool name, the args inline, and the result body collapsible. This is how bots use cross-cutting capabilities like memory, task management, or talking to other bots.</p>
-
-  <div class="chat-frame glass" style="margin:32px 0">
-    <div class="chat-head">
-      <div class="lhs">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <div class="title"><b>snark</b> · gpt-5-chat-latest · chatbot</div>
-      </div>
-      <div class="rhs">mcp tools 3</div>
-    </div>
-    <div class="chat-body">
-      <div class="msg">
-        <div class="ava you">N</div>
-        <div>
-          <div class="who"><b>you</b></div>
-          <div class="bubble">find any memories about that ESTALE thing</div>
-        </div>
-      </div>
-      <div class="msg">
-        <div class="ava snark">S</div>
-        <div>
-          <div class="who"><b>snark</b> <span class="pill">memory · tools</span></div>
-
-          <div class="tc mcp">
-            <div class="tc-head">
-              <div class="tc-status ok">✓</div>
-              <div class="tc-kind mcp">MCP</div>
-              <div class="tc-cmd">
-                <span class="mcp-name">memory_search</span>
-                <span class="mcp-args">query: "ESTALE nginx Unraid", n_results: 5</span>
-              </div>
-              <div class="tc-size">0.74 KB</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body" style="font-size:12.5px;color:#cdd9eb">3 memories matched (cosine ≥ 0.62):
-
-<b style="color:#fff">▸ 0.81</b>  Unraid's user-share FUSE union mount returns ESTALE under nginx's
-       open-file cache after git pull. Fix: <code style="font-size:11px">docker restart</code> after each
-       pull. Decided 2026-05-13.
-
-<b style="color:#fff">▸ 0.72</b>  bawthub-public-site nginx serves /mnt/user/appdata/bawthub-public/site/
-       — bind-mounted, git-checkout root.
-
-<b style="color:#fff">▸ 0.64</b>  Loopy's deploy.sh: bounce push through echo for GitHub auth, then
-       SSH unraid-lan for the pull + restart.</div>
-          </div>
-
-          <div class="tc mcp">
-            <div class="tc-head">
-              <div class="tc-status ok">✓</div>
-              <div class="tc-kind mcp">MCP</div>
-              <div class="tc-cmd">
-                <span class="mcp-name">tasks_list</span>
-                <span class="mcp-args">project: "deploy-pipeline", status: "open"</span>
-              </div>
-              <div class="tc-size">0.31 KB</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body" style="font-size:12.5px;color:#cdd9eb"><b style="color:#fff">TASK-218</b>  Turn lifecycle resilience (boot janitor)  · plan
-<b style="color:#fff">TASK-219</b>  Agent destructive-command guard         · refining</div>
-          </div>
-
-          <div class="bubble" style="margin-top:8px">three matching memories, no open task tracking the ESTALE behavior specifically. it's documented but not converted to work. want me to write it up as a follow-up?</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <p>The pill itself is the recognizable shape — <code>⌬ memory_search</code> in magenta. The args appear dimmed beside it, the result body folds away. The body itself can render rich content: bolded relevance scores, code spans, structured search hits. The renderer for <code>kind: "mcp"</code> doesn't try to be smart — it shows the JSON-ish result the server returned, formatted as monospace, and lets the human's eye do the parsing.</p>
+  <p>The status dot in the head has three states with distinct colours: <span class="pill green">✓ ok</span>, <span class="pill gold">● running</span> (pulses), <span class="pill red">! error</span> (with the exit code shoved into the size slot). Errors never collapse — they default open.</p>
 
   <h2><span class="num">04</span> Parsed commands.</h2>
   <p>Every bash and ssh call gets <b>parsed at render time</b>, not just dumped as a string. The renderer pulls out:</p>
   <ul>
-    <li><b>Host</b> for SSH calls — rendered as a colored pill</li>
+    <li><b>Host</b> for SSH calls — rendered as a coloured pill (<code>echo</code>, <code>unraid-lan</code>) so the target is the first thing you see</li>
     <li><b>Command name</b> (the binary) — bolded</li>
     <li><b>Args</b> — dimmed mono</li>
-    <li><b>Pipes</b> — collapsed into one line if the chain is short</li>
+    <li><b>Pipes</b> — collapsed into one line if the chain is short, expanded inline if long</li>
     <li><b>Heredocs</b> — folded into the body, not the headline</li>
   </ul>
-  <p>This is the difference between reading <em>"this command ran"</em> and <em>understanding what the command did at a glance.</em></p>
+  <p>This is the difference between reading <em>"this command ran"</em> and <em>understanding what the command did at a glance.</em> The parser lives at <code>frontend/src/lib/commandParser.ts</code> and is used by both the Bash and SSH renderers.</p>
 
-  <div class="chat-frame glass" style="margin:32px 0">
-    <div class="chat-head">
-      <div class="lhs">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <div class="title"><b>vex</b> · claude-sonnet · agent</div>
-      </div>
-      <div class="rhs">network ops · 5 ssh calls</div>
-    </div>
-    <div class="chat-body">
-      <div class="msg">
-        <div class="ava vex">V</div>
-        <div>
-          <div class="who"><b>vex</b> <span class="pill">claude-code · 4 turns</span></div>
-          <div class="bubble">checking each host can reach the registry, then probing the new container.</div>
+  <h2><span class="num">05</span> The MCP pill.</h2>
+  <p>Tools that come in via the MCP server get a distinctive rendering — a magenta pill (<code>⌬ memory_search</code>) with the full namespaced tool name, the args inline and dimmed, and the result body collapsible. This is how bots use cross-cutting capabilities like memory, task management, or messaging other bots. The pill makes "this is an MCP tool, not a local command" instantly obvious in a long thread.</p>
 
-          <div class="tc ssh">
-            <div class="tc-head">
-              <div class="tc-status ok">✓</div>
-              <div class="tc-kind ssh">SSH</div>
-              <div class="tc-cmd">
-                <span class="ssh-host">echo</span>
-                <span class="ssh-arrow">→</span>
-                <span class="ssh-inner">timeout 5 bash -c '</dev/tcp/10.0.2.36/80'</span>
-              </div>
-              <div class="tc-size">12 B</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body terminal"><span class="out">OPEN</span></div>
-          </div>
+  <p>The renderer for <code>kind: "mcp"</code> doesn't try to be smart about the body — it shows the JSON-ish result the server returned, formatted as monospace, and lets the human's eye do the parsing. Bots themselves are usually the consumers; the human just wants to scan whether the lookup worked.</p>
 
-          <div class="tc ssh">
-            <div class="tc-head">
-              <div class="tc-status ok">✓</div>
-              <div class="tc-kind ssh">SSH</div>
-              <div class="tc-cmd">
-                <span class="ssh-host">unraid-lan</span>
-                <span class="ssh-arrow">→</span>
-                <span class="ssh-inner">docker inspect bawthub-public-site --format '{{.NetworkSettings.Networks.br0_2.IPAddress}}'</span>
-              </div>
-              <div class="tc-size">11 B</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body terminal"><span class="out">10.0.2.36</span></div>
-          </div>
-
-          <div class="tc">
-            <div class="tc-head">
-              <div class="tc-status err">!</div>
-              <div class="tc-kind bash">Bash</div>
-              <div class="tc-cmd"><b>curl</b> <span style="color:var(--dim)">-sI http://10.0.2.36:80/architecture/</span></div>
-              <div class="tc-size">177 B · exit 1</div>
-              <div class="tc-chev">▾</div>
-            </div>
-            <div class="tc-body terminal"><span class="out">HTTP/1.1 500 Internal Server Error</span>
-<span class="out">Server: nginx/1.29.8</span>
-<span class="dim">Content-Length: 177</span></div>
-          </div>
-
-          <div class="bubble" style="margin-top:8px">network's fine, container's reachable. it's serving <span style="color:var(--red)">500</span> on the new pages — looks like an nginx file-handle issue. let me restart it.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <p>Notice the SSH calls: the host pill (<span class="pill" style="background:rgba(255,139,79,.14);color:#ffb98a;border-color:rgba(255,139,79,.3)">echo</span>, <span class="pill" style="background:rgba(255,139,79,.14);color:#ffb98a;border-color:rgba(255,139,79,.3)">unraid-lan</span>) immediately tells you which machine you're looking at. The error case (the third tool) flips the status dot to red, surfaces the exit code in the headline, and the body shows the actual HTTP response. No clicking required for the most-asked questions: <em>which host? what command? what came back?</em></p>
-
-  <h2><span class="num">05</span> Grouping &amp; collapse.</h2>
-  <p>Some turns produce a dozen tool calls in a row — searches, file reads, edits. Showing them all expanded would bury the conversation. The chat applies a heuristic: if a single message has more than 3 sequential tool calls, it groups them under a summary header.</p>
-
-  <div class="chat-frame glass" style="margin:32px 0">
-    <div class="chat-head">
-      <div class="lhs">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <div class="title"><b>loopy</b> · claude-sonnet · researching</div>
-      </div>
-      <div class="rhs">tools 12 · grouped</div>
-    </div>
-    <div class="chat-body">
-      <div class="msg">
-        <div class="ava loopy">L</div>
-        <div>
-          <div class="who"><b>loopy</b></div>
-          <div class="tc-group">
-            <div class="tc-group-head">
-              <span class="count">12</span>
-              <span class="summary"><b>Read 7 files, ran 4 searches, executed 1 grep across <code>llm_bawt/agent_backends/</code></b></span>
-              <span class="tc-chev">▾</span>
-            </div>
-            <div class="tc-children">
-              <div class="tc collapsed">
-                <div class="tc-head">
-                  <div class="tc-status ok">✓</div>
-                  <div class="tc-kind search">Grep</div>
-                  <div class="tc-cmd"><b>tool_use_id</b> in <code>llm_bawt/agent_backends/</code></div>
-                  <div class="tc-size">17 matches</div>
-                  <div class="tc-chev">▾</div>
-                </div>
-                <div class="tc-body"></div>
-              </div>
-              <div class="tc collapsed">
-                <div class="tc-head">
-                  <div class="tc-status ok">✓</div>
-                  <div class="tc-kind read">Read</div>
-                  <div class="tc-cmd"><b>claude_code/bridge.py</b> · 1247 lines</div>
-                  <div class="tc-size">42 KB</div>
-                  <div class="tc-chev">▾</div>
-                </div>
-                <div class="tc-body"></div>
-              </div>
-              <div class="tc collapsed">
-                <div class="tc-head">
-                  <div class="tc-status ok">✓</div>
-                  <div class="tc-kind read">Read</div>
-                  <div class="tc-cmd"><b>codex/bridge.py</b> · 962 lines</div>
-                  <div class="tc-size">31 KB</div>
-                  <div class="tc-chev">▾</div>
-                </div>
-                <div class="tc-body"></div>
-              </div>
-              <div class="tc collapsed">
-                <div class="tc-head">
-                  <div class="tc-status ok">✓</div>
-                  <div class="tc-kind read">Read</div>
-                  <div class="tc-cmd"><b>openclaw/events.py</b> · 218 lines</div>
-                  <div class="tc-size">6.4 KB</div>
-                  <div class="tc-chev">▾</div>
-                </div>
-                <div class="tc-body"></div>
-              </div>
-              <div style="text-align:center;color:var(--dim);font-size:11.5px;padding:8px">+ 8 more · click group header to expand all</div>
-            </div>
-          </div>
-          <div class="bubble" style="margin-top:8px">three bridges, same shape. The dispatch table in <code>OpenClawEvent</code> handles all of them with one renderer.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <h2><span class="num">06</span> Grouping &amp; collapse.</h2>
+  <p>Some turns produce a dozen tool calls in a row — searches, file reads, edits. Showing them all expanded would bury the conversation. The chat applies a heuristic: if a single message has more than <em>3 sequential tool calls of similar kinds</em>, they collapse under a summary header.</p>
   <p>The grouped view shows the count and a one-line summary the renderer composes from the kinds — <em>"Read 7 files, ran 4 searches, executed 1 grep"</em> — so the human can decide whether to expand. Inside the group, each tool call is collapsed by default. Click any individual chevron to drill in.</p>
 
-  <h2><span class="num">06</span> Streaming, not batching.</h2>
-  <p>Tool calls render as they happen. A bash command in flight shows a pulsing yellow dot and the placeholder <code>streaming…</code> in the size slot. When the stream completes, the dot flips to green, the size resolves to the actual byte count, and the body is populated.</p>
+  <h2><span class="num">07</span> Streaming, not batching.</h2>
+  <p>Tool calls render as they happen. A bash command in flight shows a pulsing yellow dot and the placeholder <code>streaming…</code> in the size slot. When the stream completes, the dot flips to green, the size resolves to the actual byte count, and the body is fully populated.</p>
 
   <div class="callout spec">
     <div class="ic">✦</div>
@@ -472,13 +166,13 @@
 
   <p>Streaming behavior also drives the renderer's <em>incremental</em> mode: rather than waiting for a tool's result and then mounting the whole component, the renderer mounts the tool head as soon as the <code>tool_use_started</code> event lands, then progressively appends to its body as <code>tool_use_delta</code> events arrive. For long bash output or large file reads, you see the output filling in real time, terminal-style.</p>
 
-  <h2><span class="num">07</span> Why this matters.</h2>
+  <h2><span class="num">08</span> Why this matters.</h2>
   <p>Most chat surfaces with tool support treat tool calls as <em>noise</em> — they collapse them, dim them, gray them out. They're treated as boilerplate between the human and the model.</p>
   <p>BawtHub treats them as <b>the point</b>. When a bot does work for you, the <em>doing</em> is what you want to see — what it ran, what came back, what changed. The chat surface is engineered as much for tool readability as for prose readability. Both are first-class.</p>
-  <blockquote>"I would like a page highlighting chat... how agent tool calls are mapped into a common rendering engine for doing edits, seeing the changes with diffs, parsed commandlines and ssh."</blockquote>
-  <p>This is that page. Every detail above — kinds, statuses, parsed hosts, diffs, the MCP pill, grouping, streaming dots — is a direct artifact of treating <em>"the agent did something useful"</em> as a UX problem worth solving end-to-end, not as a developer convenience.</p>
+  <blockquote>"How agent tool calls are mapped into a common rendering engine for doing edits, seeing the changes with diffs, parsed commandlines and ssh."</blockquote>
+  <p>This page is that. Every detail above — kinds, statuses, parsed hosts, diffs, the MCP pill, grouping, streaming dots — is a direct artifact of treating <em>"the agent did something useful"</em> as a UX problem worth solving end-to-end, not as a developer convenience.</p>
 
-  <h2><span class="num">08</span> Key files.</h2>
+  <h2><span class="num">09</span> Key files.</h2>
   <div class="files">
     <div class="fileref"><code>frontend/src/components/chat/ChatUI.tsx</code><div class="desc"><b>The root chat surface.</b> ~3,500 lines. Owns the Zustand store wiring, message list, event subscription, and dispatches to per-kind tool renderers.</div></div>
     <div class="fileref"><code>frontend/src/components/chat/ToolCallCard.tsx</code><div class="desc"><b>The base tool-call component.</b> Renders header (status + kind pill + parsed command + size + chevron) and body (kind-specific renderer).</div></div>
