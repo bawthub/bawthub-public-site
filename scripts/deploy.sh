@@ -58,6 +58,12 @@ fi
 echo "→ Pulling on Unraid (10.0.0.99)..."
 ssh unraid-lan 'cd /mnt/user/appdata/bawthub-public/site && git pull --ff-only origin main'
 
+# 5. Restart nginx container — git pulls change inodes; Unraid user-share
+#    can return ESTALE on the FUSE union mount until nginx re-opens files.
+#    Restart is ~1s and idempotent.
+echo "→ Restarting bawthub-public-site nginx..."
+ssh unraid-lan 'docker restart bawthub-public-site >/dev/null'
+
 echo
 echo "✓ Deployed: https://bawthub.com/"
 echo "  HEAD: $(git rev-parse --short HEAD)  ($(git log -1 --format=%s))"
