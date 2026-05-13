@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>OpenClaw bridge · agents · BawtHub Architecture</title>
-<meta name="description" content="The original agent bridge in llm-bawt: a WebSocket client to a remote OpenClaw gateway, Ed25519 device identity, a stream ingest pipeline that normalizes 'agent stream' events into the shared OpenClawEvent format, and a chat.history fallback for empty turns." />
+<meta name="description" content="The original agent bridge in llm-bawt: a WebSocket client to a remote OpenClaw gateway, Ed25519 device identity, a stream ingest pipeline that normalizes 'agent stream' events into the shared AgentEvent format, and a chat.history fallback for empty turns." />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <link rel="stylesheet" href="/architecture/assets/site.css?v=3" />
@@ -30,7 +30,7 @@
   <div class="page-head">
     <div class="kicker"><span class="dot"></span> agents · openclaw bridge</div>
     <h1 class="page-title">The first bridge. <em>The template.</em></h1>
-    <p class="lede">OpenClaw was the original external agent system <code>llm-bawt</code> integrated with — a remote agent gateway running on a separate host, accessed over a persistent WebSocket. The bridge that connects them is older than the Claude Code and Codex bridges, and it's the one whose abstractions they inherit. The <code>OpenClawEvent</code> format, the Redis fanout, the <code>SessionQueue</code>, the consumer-group pattern — all of it started here. Even the type name on the shared event format gives that away.</p>
+    <p class="lede">OpenClaw was the original external agent system <code>llm-bawt</code> integrated with — a remote agent gateway running on a separate host, accessed over a persistent WebSocket. The bridge that connects them is older than the Claude Code and Codex bridges, and it's the one whose abstractions they inherit. The <code>AgentEvent</code> format, the Redis fanout, the <code>SessionQueue</code>, the consumer-group pattern — all of it started here. Even the type name on the shared event format gives that away.</p>
     <div class="meta">
       <span><b>Upstream:</b> OpenClaw gateway over WebSocket (TLS)</span>
       <span><b>Auth:</b> Ed25519 device identity · v3 signed device-auth handshake</span>
@@ -54,7 +54,7 @@
 │  → send_command(backend="openclaw",              │
 │       session_key="agent:loopy:main", message)   │
 └─────────────────────┬────────────────────────────┘
-                      │ XADD openclaw:commands
+                      │ XADD agent:commands
                       ▼
 ┌──────────────────────────────────────────────────┐
 │  openclaw-bridge container                       │
@@ -65,18 +65,18 @@
 │         → WS chat.send → gateway                 │
 │         ← raw agent.* / chat.* events            │
 │   • EventIngestPipeline.parse(raw, sk)           │
-│         → OpenClawEvent (the shared format)      │
+│         → AgentEvent (the shared format)      │
 │   • publish_run_event(request_id, event)         │
 │   • on empty stream → chat.history fallback      │
 └─────────────────────┬────────────────────────────┘
-                      │ XADD openclaw:run:{req_id}
+                      │ XADD agent:run:{req_id}
                       ▼
                  API SSE subscriber
 
   Persistent WebSocket to OpenClaw gateway lives
   parallel to all of this. Every event flows
   through ingest, then to per-session streams
-  (openclaw:events:{sk}) for passive observers.</pre>
+  (agent:events:{sk}) for passive observers.</pre>
   </div>
 
   <h2 id="identity"><span class="num">03</span> Ed25519 device identity.</h2>
@@ -109,11 +109,11 @@ v3|deviceId|client_id|client_mode|role|scopes|signed_at_ms|token|nonce|platform|
 
   <p>If the gateway rejects the existing <code>deviceToken</code> as stale, the bridge nulls it and re-attempts pairing — the keypair stays the same so device identity is preserved.</p>
 
-  <h2 id="ingest"><span class="num">04</span> Ingest: gateway events → OpenClawEvent.</h2>
-  <p>The gateway emits a chatty WebSocket protocol. <code>EventIngestPipeline.parse()</code> is the normalization layer. Inputs are raw dicts of the form <code>{"type": "event", "event": "agent", "payload": {...}}</code>. Outputs are <code>OpenClawEvent</code> dataclass instances. Most of the work is dispatching on <code>(event_name, payload.stream)</code>:</p>
+  <h2 id="ingest"><span class="num">04</span> Ingest: gateway events → AgentEvent.</h2>
+  <p>The gateway emits a chatty WebSocket protocol. <code>EventIngestPipeline.parse()</code> is the normalization layer. Inputs are raw dicts of the form <code>{"type": "event", "event": "agent", "payload": {...}}</code>. Outputs are <code>AgentEvent</code> dataclass instances. Most of the work is dispatching on <code>(event_name, payload.stream)</code>:</p>
 
   <table class="spec">
-    <thead><tr><th>Gateway event</th><th>payload.stream</th><th>data.phase</th><th>OpenClawEvent</th></tr></thead>
+    <thead><tr><th>Gateway event</th><th>payload.stream</th><th>data.phase</th><th>AgentEvent</th></tr></thead>
     <tbody>
       <tr><td><code>agent</code></td><td><code>lifecycle</code></td><td><code>start</code></td><td><code>RUN_STARTED</code></td></tr>
       <tr><td><code>agent</code></td><td><code>lifecycle</code></td><td><code>end</code></td><td><code>RUN_COMPLETED</code></td></tr>
@@ -132,11 +132,11 @@ v3|deviceId|client_id|client_mode|role|scopes|signed_at_ms|token|nonce|platform|
   <p>Unknown event shapes fall through as <code>SYSTEM_NOTE</code> with the original payload preserved in <code>raw</code> — observable but non-disruptive. Content-pattern filters (regex) can also drop user-message text matching arbitrary patterns; this gets used to suppress automation chatter that doesn't belong in the visible transcript.</p>
 
   <h2 id="fanout"><span class="num">05</span> Fanout: two destinations per event.</h2>
-  <p>Every normalized <code>OpenClawEvent</code> goes to <i>two</i> Redis streams:</p>
+  <p>Every normalized <code>AgentEvent</code> goes to <i>two</i> Redis streams:</p>
 
   <ul>
-    <li><code>openclaw:events:{session_key}</code> — the durable per-session stream. Any subscriber (the chat UI, the activity ticker, downstream batch jobs) can replay or tail this. Trimmed to ~10k events per session.</li>
-    <li><code>openclaw:run:{request_id}</code> — the short-lived per-run stream. Only events for the currently active <code>chat.send</code> request go here. The API's SSE generator subscribes to this for the duration of the user's turn, then unsubscribes.</li>
+    <li><code>agent:events:{session_key}</code> — the durable per-session stream. Any subscriber (the chat UI, the activity ticker, downstream batch jobs) can replay or tail this. Trimmed to ~10k events per session.</li>
+    <li><code>agent:run:{request_id}</code> — the short-lived per-run stream. Only events for the currently active <code>chat.send</code> request go here. The API's SSE generator subscribes to this for the duration of the user's turn, then unsubscribes.</li>
   </ul>
 
   <p>This split is what lets passive observers (e.g. a CLI session on the gateway that wasn't triggered by the API) still show up in the unified event stream, while keeping the per-request SSE feed scoped to a single user turn.</p>
@@ -145,7 +145,7 @@ v3|deviceId|client_id|client_mode|role|scopes|signed_at_ms|token|nonce|platform|
   <p>OpenClaw's WS client supports an explicit <code>cancel_session(session_key)</code> that sets an <code>asyncio.Event</code> shared with the active <code>send_and_stream</code> iterator. When the API publishes a <code>chat.abort</code> RPC command:</p>
 
   <ol>
-    <li>The bridge picks it up from <code>openclaw:commands</code> as an <code>rpc.call</code> with method <code>chat.abort</code>.</li>
+    <li>The bridge picks it up from <code>agent:commands</code> as an <code>rpc.call</code> with method <code>chat.abort</code>.</li>
     <li>Before forwarding, the bridge calls <code>ws_client.cancel_session(session_key)</code>, which sets the per-session cancel event.</li>
     <li>The active <code>send_and_stream</code> loop sees the event flip and returns immediately — releasing the session lock.</li>
     <li>The bridge then forwards <code>chat.abort</code> to the gateway via the underlying <code>_request()</code> path so the upstream agent also stops.</li>
@@ -176,7 +176,7 @@ v3|deviceId|client_id|client_mode|role|scopes|signed_at_ms|token|nonce|platform|
     <li><code>queue.is_busy(session_key)</code> — non-blocking check, used to log <q>session busy — queuing send</q>.</li>
   </ul>
 
-  <p>That same object is imported wholesale by the Claude Code and Codex bridges — <code>from openclaw_bridge.session_queue import SessionQueue</code> — and used identically. The lock is what guarantees per-session ordering across all three.</p>
+  <p>That same object is imported wholesale by the Claude Code and Codex bridges — <code>from agent_bridge.session_queue import SessionQueue</code> — and used identically. The lock is what guarantees per-session ordering across all three.</p>
 
   <h2 id="bot-routing"><span class="num">09</span> Session keys, bot routing, and the active path.</h2>
   <p>The <code>OpenClawBackend.stream_raw()</code> active path lives in the main API process, not the bridge. The backend's session-key resolver is the simplest of the three:</p>
@@ -210,11 +210,11 @@ def _resolve_session_key(self, config: dict) -> str:
     <div class="fileref"><code>src/openclaw_bridge/bridge.py</code><div class="desc"><b>The bridge.</b> ~640 lines. Command listener (<code>chat.send</code>, <code>rpc.call</code>), ingest dispatch, fanout, chat.history fallback, RPC response routing.</div></div>
     <div class="fileref"><code>src/openclaw_bridge/ws_client.py</code><div class="desc"><b>WebSocket client.</b> ~680 lines. Ed25519 identity, v3 signed handshake, pairing retry, RPC futures, run queues, cancel events, reconnect.</div></div>
     <div class="fileref"><code>src/openclaw_bridge/ingest.py</code><div class="desc"><b>Event normalization.</b> <code>EventIngestPipeline.parse()</code> — the (event_name, stream) dispatch table. Includes <code>IngestFilterConfig</code> for env-driven content/event drop filters.</div></div>
-    <div class="fileref"><code>src/openclaw_bridge/events.py</code><div class="desc"><b>Shared event format.</b> <code>OpenClawEvent</code> + <code>OpenClawEventKind</code> enum + <code>synthesize_event_id()</code>. The dataclass every bridge re-uses.</div></div>
-    <div class="fileref"><code>src/openclaw_bridge/publisher.py</code><div class="desc"><b>Redis publisher.</b> Stream names, maxlen policy (10k events/session, 5k per run, 5k unified), <code>provider</code> stamping at publish boundary.</div></div>
-    <div class="fileref"><code>src/openclaw_bridge/subscriber.py</code><div class="desc"><b>Redis subscriber.</b> <code>RedisSubscriber.subscribe_run(request_id)</code> — the async iterator the main API uses to pull events back out per request.</div></div>
-    <div class="fileref"><code>src/openclaw_bridge/session_queue.py</code><div class="desc"><b>The shared lock.</b> Per-session asyncio locks + active-task tracking. Reused by Claude Code and Codex bridges.</div></div>
-    <div class="fileref"><code>src/openclaw_bridge/store.py</code><div class="desc"><b>EventStore.</b> Optional sqlite event persistence; used by the passive feed for replay scenarios.</div></div>
+    <div class="fileref"><code>src/agent_bridge/events.py</code><div class="desc"><b>Shared event format.</b> <code>AgentEvent</code> + <code>AgentEventKind</code> enum + <code>synthesize_event_id()</code>. The dataclass every bridge re-uses.</div></div>
+    <div class="fileref"><code>src/agent_bridge/publisher.py</code><div class="desc"><b>Redis publisher.</b> Stream names, maxlen policy (10k events/session, 5k per run, 5k unified), <code>provider</code> stamping at publish boundary.</div></div>
+    <div class="fileref"><code>src/agent_bridge/subscriber.py</code><div class="desc"><b>Redis subscriber.</b> <code>RedisSubscriber.subscribe_run(request_id)</code> — the async iterator the main API uses to pull events back out per request.</div></div>
+    <div class="fileref"><code>src/agent_bridge/session_queue.py</code><div class="desc"><b>The shared lock.</b> Per-session asyncio locks + active-task tracking. Reused by Claude Code and Codex bridges.</div></div>
+    <div class="fileref"><code>src/agent_bridge/store.py</code><div class="desc"><b>EventStore.</b> Optional sqlite event persistence; used by the passive feed for replay scenarios.</div></div>
     <div class="fileref"><code>src/llm_bawt/agent_backends/openclaw.py</code><div class="desc"><b>The backend.</b> The actual <code>stream_raw()</code> implementation that all three bridges' backends inherit. Per-thread state, separate-thread async Redis client to avoid event-loop cross-contamination, queue-drain SSE generator.</div></div>
   </div>
 

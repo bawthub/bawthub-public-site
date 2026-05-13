@@ -74,7 +74,7 @@
     </div>
     <div style="text-align:center;color:var(--dim);font-size:18px;margin:14px 0;letter-spacing:.5em">↓</div>
     <div style="padding:18px;border-radius:14px;border:1px solid var(--line-strong);background:linear-gradient(135deg,rgba(79,209,255,.1),rgba(139,92,246,.1));text-align:center">
-      <div style="font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">OpenClawEvent — one shape</div>
+      <div style="font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">AgentEvent — one shape</div>
       <div style="font-family:var(--mono);font-size:12.5px;color:#dde7f7">{ kind, status, name, args, result, tokens, ts }</div>
     </div>
     <div style="text-align:center;color:var(--dim);font-size:18px;margin:14px 0;letter-spacing:.5em">↓</div>
@@ -84,7 +84,7 @@
     </div>
   </div>
 
-  <p>The unified shape is defined as <code>OpenClawEvent</code> in <code>llm_bawt/agent_backends/openclaw/events.py</code> (named for historical reasons — OpenClaw was the first bridge, and the shape stuck when Claude Code and Codex were retrofitted). The frontend imports the same shape via the generated Prisma + tRPC types. Renderers dispatch on <code>event.kind</code>; new tool kinds add a renderer without changing anything upstream.</p>
+  <p>The unified shape is defined as <code>AgentEvent</code> in <code>llm_bawt/agent_backends/openclaw/events.py</code> (named for historical reasons — OpenClaw was the first bridge, and the shape stuck when Claude Code and Codex were retrofitted). The frontend imports the same shape via the generated Prisma + tRPC types. Renderers dispatch on <code>event.kind</code>; new tool kinds add a renderer without changing anything upstream.</p>
 
   <h2><span class="num">03</span> Tool-call rendering — the design vocabulary.</h2>
   <p>Every tool kind gets its own component, but they all share the same skeleton: <em>status dot</em>, <em>kind pill</em>, <em>headline</em>, <em>size</em>, <em>chevron</em>, and a body that's hidden by default for long output. The kind pill colour and the body styling are all that change between renderers.</p>
@@ -180,7 +180,7 @@
     <div class="fileref"><code>frontend/src/lib/commandParser.ts</code><div class="desc"><b>Bash/SSH command parsing.</b> Extracts host, binary, pipes, heredocs from raw command strings for richer rendering.</div></div>
     <div class="fileref"><code>frontend/src/stores/chatStore.ts</code><div class="desc"><b>Zustand store.</b> Holds messages keyed by session, tool-call events keyed by id, dedupes between SSE and unified-stream sources.</div></div>
     <div class="fileref"><code>frontend/src/lib/eventSource.ts</code><div class="desc"><b>Persistent EventSource client.</b> Subscribes to <code>events:{bot_id}:{user_id}</code>; reconnects with backoff; per-window consumer id to avoid Redis consumer-group races.</div></div>
-    <div class="fileref"><code>src/llm_bawt/agent_backends/openclaw/events.py</code><div class="desc"><b>The unified event shape.</b> <code>OpenClawEvent</code> dataclass — kind, status, name, args, result, tokens, ts. The contract every bridge implements.</div></div>
+    <div class="fileref"><code>src/llm_bawt/agent_backends/openclaw/events.py</code><div class="desc"><b>The unified event shape.</b> <code>AgentEvent</code> dataclass — kind, status, name, args, result, tokens, ts. The contract every bridge implements.</div></div>
   </div>
 
   <div class="prevnext">

@@ -64,7 +64,7 @@
       </div>
       <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,255,209,.05)">
         <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c4fff0;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#4fffd1;box-shadow:0 0 10px #4fffd1"></span>OpenClaw</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">openclaw_events</code></span><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">openclaw_session_state</code></span><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">openclaw_runs</code></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">agent_events</code></span><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">agent_session_state</code></span><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">agent_runs</code></span></div>
       </div>
       <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,210,79,.05)">
         <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff0bf;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ffd24f;box-shadow:0 0 10px #ffd24f"></span>Prompts</div>
@@ -127,9 +127,9 @@
   <table class="spec">
     <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
     <tbody>
-      <tr><td><code>openclaw_events</code></td><td>Every <code>OpenClawEvent</code> the bridges have published, deduped by <code>event_dedupe_key</code> (SHA-256 of session/kind/payload/seq). Indexed on <code>(session_key, created_at)</code>, <code>(session_key, run_id)</code>, <code>(session_key, seq)</code>. <code>payload_json JSONB</code> holds the full raw event.</td></tr>
-      <tr><td><code>openclaw_session_state</code></td><td>Per-session cursor (<code>last_event_id</code>) for replay-gap detection. Tracks <code>ws_connected</code> and an opaque <code>last_cursor</code> for the upstream gateway.</td></tr>
-      <tr><td><code>openclaw_runs</code></td><td>One row per agent run with assembled <code>full_text</code>, <code>tool_calls_json</code>, status, and started/completed timestamps. This is the closest thing to a "chat transcript" the OpenClaw stack maintains.</td></tr>
+      <tr><td><code>agent_events</code></td><td>Every <code>AgentEvent</code> the bridges have published, deduped by <code>event_dedupe_key</code> (SHA-256 of session/kind/payload/seq). Indexed on <code>(session_key, created_at)</code>, <code>(session_key, run_id)</code>, <code>(session_key, seq)</code>. <code>payload_json JSONB</code> holds the full raw event.</td></tr>
+      <tr><td><code>agent_session_state</code></td><td>Per-session cursor (<code>last_event_id</code>) for replay-gap detection. Tracks <code>ws_connected</code> and an opaque <code>last_cursor</code> for the upstream gateway.</td></tr>
+      <tr><td><code>agent_runs</code></td><td>One row per agent run with assembled <code>full_text</code>, <code>tool_calls_json</code>, status, and started/completed timestamps. This is the closest thing to a "chat transcript" the OpenClaw stack maintains.</td></tr>
     </tbody>
   </table>
 
@@ -183,7 +183,7 @@
   <ul>
     <li><b>Streams</b> for events, commands, and run responses — capped at <code>maxlen ~10,000</code> per session (per-session events), <code>5,000</code> per request (run streams), or <code>5,000</code> for unified bot+user event streams.</li>
     <li><b>Short-lived RPC reply streams</b> with 60-second TTLs for cross-process function calls.</li>
-    <li><b>History-persist commands</b> (<code>openclaw:history</code>, maxlen 1,000) that the main app consumes to keep bot chat histories in sync with the gateway.</li>
+    <li><b>History-persist commands</b> (<code>agent:history</code>, maxlen 1,000) that the main app consumes to keep bot chat histories in sync with the gateway.</li>
   </ul>
 
   <p>Nothing in Redis is durable past restart. Postgres is the source of truth; Redis is just the fast path between processes.</p>
@@ -200,7 +200,7 @@
     <div class="fileref"><code>src/llm_bawt/service/scheduler.py</code><div class="desc"><b>Scheduled jobs.</b> Cron-style automation tables — <code>scheduled_jobs</code> and <code>job_runs</code>.</div></div>
     <div class="fileref"><code>src/llm_bawt/runtime_settings.py</code><div class="desc"><b>Runtime settings + bot profiles.</b> <code>runtime_settings</code> for hot-reload values; <code>bot_profiles</code> for the bot catalog with <code>agent_backend_config</code>.</div></div>
     <div class="fileref"><code>src/llm_bawt/prompt_registry.py</code><div class="desc"><b>Versioned prompt templates.</b> Backs the <code>/tools/prompts</code> editor; every save is a new version row.</div></div>
-    <div class="fileref"><code>src/openclaw_bridge/store.py</code><div class="desc"><b>OpenClaw event archive.</b> Creates <code>openclaw_events</code>, <code>openclaw_session_state</code>, <code>openclaw_runs</code>; assembles run text from delta events.</div></div>
+    <div class="fileref"><code>src/agent_bridge/store.py</code><div class="desc"><b>OpenClaw event archive.</b> Creates <code>agent_events</code>, <code>agent_session_state</code>, <code>agent_runs</code>; assembles run text from delta events.</div></div>
     <div class="fileref"><code>bawthub/frontend/prisma/schema.prisma</code><div class="desc"><b>BawtHub schema.</b> ~270 lines of Prisma DSL covering avatars, the agent task system, container catalog, notifications, and user preferences.</div></div>
   </div>
 

@@ -30,7 +30,7 @@
   <div class="page-head">
     <div class="kicker"><span class="dot"></span> agents · codex bridge</div>
     <h1 class="page-title">A different SDK. <em>Same envelope.</em></h1>
-    <p class="lede">The Codex bridge is the third agent backend in <code>llm-bawt</code>, and the one that proved the bridge pattern was actually a pattern. Different SDK (OpenAI's <code>openai_codex_sdk</code>, talking JSON-RPC 2.0 over stdio to a bundled Rust binary), different auth (ChatGPT-mode OAuth via <code>~/.codex/auth.json</code>), different item types (<code>commandExecution</code>, <code>fileChange</code>, <code>webSearch</code>, <code>mcpToolCall</code>). And yet — the main API doesn't have to know any of that. Same Redis stream, same <code>OpenClawEvent</code> envelope, same SSE generator on the other side.</p>
+    <p class="lede">The Codex bridge is the third agent backend in <code>llm-bawt</code>, and the one that proved the bridge pattern was actually a pattern. Different SDK (OpenAI's <code>openai_codex_sdk</code>, talking JSON-RPC 2.0 over stdio to a bundled Rust binary), different auth (ChatGPT-mode OAuth via <code>~/.codex/auth.json</code>), different item types (<code>commandExecution</code>, <code>fileChange</code>, <code>webSearch</code>, <code>mcpToolCall</code>). And yet — the main API doesn't have to know any of that. Same Redis stream, same <code>AgentEvent</code> envelope, same SSE generator on the other side.</p>
     <div class="meta">
       <span><b>Upstream:</b> OpenAI Codex SDK + bundled Rust binary (static-pie musl)</span>
       <span><b>Auth:</b> ChatGPT subscription OAuth (Plus/Pro/Team)</span>
@@ -46,7 +46,7 @@
     <li><b>One AsyncCodex per container.</b> A single long-lived <code>AsyncCodex</code> instance hosts multiple concurrent threads (one per session), bounded by <code>[agents] max_threads</code> in <code>~/.codex/config.toml</code>. Per-session ordering is enforced by a shared <code>SessionQueue</code> lock — the same one OpenClaw uses.</li>
     <li><b>Local plugins are staged at startup.</b> The bridge mirrors <code>~/dev/agent-skills/codex/.codex-plugin/marketplace.json</code> into <code>~/.agents/plugins/marketplace.json</code> and materializes plugin dirs under <code>~/plugins/</code> before the SDK boots. Codex's home-local plugin contract gets the shared <code>agent-skills</code> repo without absolute paths leaking into the repo.</li>
     <li><b>Self-healing supervisor.</b> If the Rust subprocess dies or auth fails mid-turn, the supervisor publishes <code>ERROR</code> + <code>run_done</code>, tears down <code>AsyncCodex</code>, and rebuilds it on the next request. Rebuild re-reads <code>auth.json</code> off disk — so <code>codex login</code> on the host self-heals the bridge with no <code>docker restart</code>.</li>
-    <li><b>Reuses <code>openclaw_bridge</code> infrastructure unchanged.</b> Same <code>RedisPublisher</code>, <code>OpenClawEvent</code>, <code>OpenClawEventKind</code>, <code>synthesize_event_id</code>, <code>SessionQueue</code>, <code>COMMANDS_STREAM</code>. Consumer group: <code>codex-bridge</code>; filters on <code>backend == "codex"</code> and ACKs everything else.</li>
+    <li><b>Reuses <code>openclaw_bridge</code> infrastructure unchanged.</b> Same <code>RedisPublisher</code>, <code>AgentEvent</code>, <code>AgentEventKind</code>, <code>synthesize_event_id</code>, <code>SessionQueue</code>, <code>COMMANDS_STREAM</code>. Consumer group: <code>codex-bridge</code>; filters on <code>backend == "codex"</code> and ACKs everything else.</li>
     <li><b>Session continuity via <code>thread_id</code>.</b> The bot's <code>agent_backend_config.session_key</code> stores Codex's <code>thread_id</code> — written by the bridge after <code>thread.started</code> fires on the first turn. On <code>chat.send</code> the bridge calls <code>thread_resume()</code>. Model change → fresh thread. <code>/new</code> → fresh thread. Resume failures (<code>thread not found</code>, <code>Missing required parameter: input[N].encrypted_content</code>, <code>no rollout found</code>) → clear session + retry once.</li>
   </ol>
 
@@ -80,7 +80,7 @@
 │  → send_command(backend="codex",                 │
 │       session_key="codex:nick", message, model)  │
 └─────────────────────┬────────────────────────────┘
-                      │ XADD openclaw:commands
+                      │ XADD agent:commands
                       ▼
 ┌──────────────────────────────────────────────────┐
 │  codex-bridge container                          │
@@ -91,9 +91,9 @@
 │   • single AsyncCodex (process-wide)             │
 │       codex.start_thread(opts) | resume_thread() │
 │       → thread.run_streamed(prompt, signal)      │
-│   • async-iter ThreadEvent ➝ OpenClawEvent       │
+│   • async-iter ThreadEvent ➝ AgentEvent       │
 └─────────────────────┬────────────────────────────┘
-                      │ XADD openclaw:run:{req_id}
+                      │ XADD agent:run:{req_id}
                       ▼
                  API SSE subscriber</pre>
   </div>

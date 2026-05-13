@@ -119,9 +119,9 @@ myagent = "mypackage.agents:MyAgentBackend"</pre>
   <h2 id="lifecycle"><span class="num">07</span> Startup wiring.</h2>
   <p>The service's <code>lifespan</code> handler in <code>service/api.py</code> does the cross-process plumbing:</p>
   <ol>
-    <li>If <code>OPENCLAW_WS_ENABLED</code> and <code>REDIS_URL</code> are both set, instantiate <code>openclaw_bridge.subscriber.RedisSubscriber</code> and connect.</li>
+    <li>If <code>OPENCLAW_WS_ENABLED</code> and <code>REDIS_URL</code> are both set, instantiate <code>agent_bridge.subscriber.RedisSubscriber</code> and connect.</li>
     <li>Walk every bot with <code>agent_backend in (openclaw, claude-code, codex)</code> and build a <code>session_key -> bot_id</code> mapping for the subscriber. Log it at startup.</li>
-    <li>Stash the subscriber on the service so all <code>OpenClawBackend</code> instances can find it via <code>get_openclaw_subscriber()</code> (a module-level singleton, set by <code>set_openclaw_subscriber</code>).</li>
+    <li>Stash the subscriber on the service so all <code>AgentBridgeBackend</code> instances can find it via <code>get_agent_subscriber()</code> (a module-level singleton, set by <code>set_agent_subscriber</code>).</li>
     <li>Start the background tool-event drain that persists <code>tool_start</code> / <code>tool_end</code> records to <code>tool_call_records</code> for later inspection.</li>
     <li>Start the periodic stale-consumer-group cleanup (every 5 minutes).</li>
   </ol>
@@ -157,7 +157,7 @@ myagent = "mypackage.agents:MyAgentBackend"</pre>
   <div class="files">
     <div class="fileref"><code>agent_backends/base.py</code><div class="desc"><b><code>AgentBackend</code>.</b> 50 lines. Abstract base — one async <code>chat()</code> method, optional <code>health_check()</code>. The whole plugin contract.</div></div>
     <div class="fileref"><code>agent_backends/registry.py</code><div class="desc"><b>Plugin registry.</b> 68 lines. Builtin registration + entry-point discovery via <code>importlib.metadata</code>. <code>get_backend(name)</code> for instance construction.</div></div>
-    <div class="fileref"><code>agent_backends/openclaw.py</code><div class="desc"><b><code>OpenClawBackend</code>.</b> 412 lines. The reference bridge implementation. <code>OpenClawResult</code> + <code>OpenClawToolCall</code> dataclasses, Redis stream subscription, ASSISTANT_DONE reconciliation, threading-local request state.</div></div>
+    <div class="fileref"><code>agent_backends/openclaw.py</code><div class="desc"><b><code>OpenClawBackend</code>.</b> 412 lines. The reference bridge implementation. <code>AgentResult</code> + <code>AgentToolCall</code> dataclasses, Redis stream subscription, ASSISTANT_DONE reconciliation, threading-local request state.</div></div>
     <div class="fileref"><code>agent_backends/claude_code.py</code><div class="desc"><b><code>ClaudeCodeBackend</code>.</b> 37 lines. Inherits OpenClaw; overrides <code>_resolve_session_key</code> for bot+user routing keys. Routes to <code>claude-code-bridge</code>.</div></div>
     <div class="fileref"><code>agent_backends/codex.py</code><div class="desc"><b><code>CodexBackend</code>.</b> 41 lines. Same shape as Claude Code. Routes to <code>codex-bridge</code>. SDK <code>thread_id</code> management is on the bridge side.</div></div>
     <div class="fileref"><code>agent_backends/prompts.py</code><div class="desc"><b>Backend prompt fragments.</b> 498 lines. Static system-prompt overlays for each backend — tool-use guidance specific to the SDK's tool catalog.</div></div>

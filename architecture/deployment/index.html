@@ -137,7 +137,7 @@
       <tr><td><code>bawthub-tts-1</code> / <code>bawthub-stt-1</code></td><td><code>moshi-server-prebuilt</code></td><td>GPU-pinned moshi voice pipeline — TTS on port 8089, STT on 8090.</td></tr>
       <tr><td><code>llm-bawt-app</code></td><td><code>llm-bawt-app</code></td><td>FastAPI service on <code>:8642</code>, MCP server on <code>:8001</code>. Holds the bot configs, memory pipeline, and chat-completion router.</td></tr>
       <tr><td><code>llm-bawt-redis</code></td><td><code>redis:7-alpine</code></td><td>Event bus for the bridges. <code>maxmemory 128mb</code>, allkeys-lru.</td></tr>
-      <tr><td><code>llm-bawt-openclaw-bridge</code></td><td><code>llm-bawt-bridge</code></td><td>WebSocket client to the remote OpenClaw gateway. Translates upstream events to <code>OpenClawEvent</code>s.</td></tr>
+      <tr><td><code>llm-bawt-openclaw-bridge</code></td><td><code>llm-bawt-bridge</code></td><td>WebSocket client to the remote OpenClaw gateway. Translates upstream events to <code>AgentEvent</code>s.</td></tr>
       <tr><td><code>llm-bawt-claude-code-bridge</code></td><td><code>llm-bawt-bridge</code></td><td>Spawns the Claude Code SDK child process. OAuth via your Claude Max subscription.</td></tr>
       <tr><td><code>llm-bawt-codex-bridge</code></td><td><code>llm-bawt-bridge</code></td><td>Talks JSON-RPC to a static-pie Rust binary. OAuth via your ChatGPT subscription.</td></tr>
       <tr><td><code>llm-bawt-playwright-mcp</code></td><td><code>mcp/playwright</code></td><td>Headless browser MCP server. Token-cost guarded with <code>--snapshot-mode=none</code>.</td></tr>
