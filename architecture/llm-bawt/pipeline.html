@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Request pipeline · llm-bawt · BawtHub Architecture</title>
+<meta name="description" content="The llm-bawt request pipeline: seven discrete stages from pre-process through post-process, a composable PromptBuilder, a singleton ModelLifecycleManager, and hook-based extensibility." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/llm-bawt/tree/main/src/llm_bawt/core" target="_blank" rel="noopener">Source ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> llm-bawt · pipeline</div>
+    <h1 class="page-title">Seven stages, one <em>turn</em>.</h1>
+    <p class="lede">Every chat turn — CLI, API, or agent bridge — flows through the same seven-stage <code>RequestPipeline</code> in <code>core/pipeline.py</code>. Each stage has a clearly defined input/output contract, exposes a hook point for extensions, and records timing and debug output into a shared <code>PipelineContext</code> dataclass. The result is that "what did the LLM actually see" is always reconstructable.</p>
+    <div class="meta">
+      <span><b>File:</b> <code>core/pipeline.py</code> (605 lines)</span>
+      <span><b>Stages:</b> 7</span>
+      <span><b>Hooks per stage:</b> N (registered, run after default logic)</span>
+    </div>
+  </div>
+
+  <h2 id="shape"><span class="num">01</span> The shape of a pipeline.</h2>
+  <p>A <code>RequestPipeline</code> is instantiated once per turn (cheap — no global state) with a bot, an LLM client, an adapter, and a fistful of optional helpers: memory client, profile manager, search client, home client, history manager, model lifecycle manager. It then receives a <code>PipelineContext</code> and walks the seven stages in order:</p>
+  <pre style="margin:18px 0 22px;padding:18px 22px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:13px;color:#bcefff;line-height:1.7;overflow-x:auto">stages = [
+    (PipelineStage.PRE_PROCESS,      self._stage_pre_process),
+    (PipelineStage.CONTEXT_BUILD,    self._stage_context_build),
+    (PipelineStage.MEMORY_RETRIEVAL, self._stage_memory_retrieval),
+    (PipelineStage.HISTORY_FILTER,   self._stage_history_filter),
+    (PipelineStage.MESSAGE_ASSEMBLY, self._stage_message_assembly),
+    (PipelineStage.EXECUTE,          self._stage_execute),
+    (PipelineStage.POST_PROCESS,     self._stage_post_process),
+]</pre>
+
+  <p>Each stage:</p>
+  <ul>
+    <li>Reads from <code>PipelineContext</code> (input fields + outputs from earlier stages).</li>
+    <li>Writes to <code>PipelineContext</code> (its own stage outputs).</li>
+    <li>Runs any user-registered hooks via <code>add_hook(stage, callable)</code> after the default logic.</li>
+    <li>Records elapsed time into <code>ctx.stage_timings[stage.name]</code>.</li>
+    <li>Records a JSON-friendly snapshot into <code>ctx.stage_outputs[stage.name]</code> when in <code>--debug</code> mode.</li>
+  </ul>
+
+  <h2 id="context"><span class="num">02</span> The shared context object.</h2>
+  <p><code>PipelineContext</code> is a frozen-shape dataclass; every stage knows exactly which keys are populated by the time it runs. Input fields: <code>prompt</code>, <code>user_id</code>, <code>bot_id</code>, <code>stream</code>, <code>plaintext_output</code>. Stage outputs accumulate:</p>
+  <table class="spec">
+    <thead><tr><th>Field</th><th>Populated by</th><th>What it holds</th></tr></thead>
+    <tbody>
+      <tr><td><code>prompt_builder</code></td><td>CONTEXT_BUILD</td><td>The composable system-prompt builder with all named sections.</td></tr>
+      <tr><td><code>memory_results</code></td><td>MEMORY_RETRIEVAL</td><td>Cold-start memory hits (only when history is sparse).</td></tr>
+      <tr><td><code>include_history</code></td><td>HISTORY_FILTER</td><td>Whether to include conversation history this turn.</td></tr>
+      <tr><td><code>messages</code></td><td>MESSAGE_ASSEMBLY</td><td>The final ordered list of <code>Message</code> objects sent to the LLM.</td></tr>
+      <tr><td><code>tool_definitions</code></td><td>CONTEXT_BUILD</td><td>The tool catalog the model will see this turn.</td></tr>
+      <tr><td><code>tool_format</code></td><td>CONTEXT_BUILD</td><td><code>native_openai</code>, <code>react</code>, or <code>xml</code> — picked from model + bot config.</td></tr>
+      <tr><td><code>response</code></td><td>EXECUTE</td><td>The LLM's final text response.</td></tr>
+      <tr><td><code>tool_context</code></td><td>EXECUTE</td><td>Summary of any tool interactions for post-process history persistence.</td></tr>
+      <tr><td><code>tool_call_details</code></td><td>EXECUTE</td><td>Per-call detail: name, arguments, result, iteration — used by debug + turn logs.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Three decision flags govern conditional logic and can be overridden by the caller (handy for tests and for the "raw completion" endpoint):</p>
+  <ul>
+    <li><code>use_memory</code> — set by default from <code>bot.requires_memory and memory_client is not None</code>.</li>
+    <li><code>use_tools</code> — set from <code>bot.uses_tools and any tool-providing client is present</code>.</li>
+    <li><code>use_search</code> — set from <code>bot.uses_search and search_client is not None</code>.</li>
+  </ul>
+
+  <h2 id="stage1"><span class="num">03</span> Stage 1 — pre-process.</h2>
+  <p>The lightest stage. Resolves the three decision flags from bot config + available clients, applies any explicit overrides from the caller, and logs the decisions if <code>--debug</code>. No I/O.</p>
+  <p>This is also where any future input validation, prompt rewriting, or PII redaction would slot in. Today it's intentionally minimal.</p>
+
+  <h2 id="stage2"><span class="num">04</span> Stage 2 — context build.</h2>
+  <p>The most architecturally interesting stage. The <code>PromptBuilder</code> in <code>core/prompt_builder.py</code> is a positional, named-section assembler — every section has a slot in the final system prompt:</p>
+
+  <div class="diagram">
+    <div class="diagram-title">System prompt section order · <code>SectionPosition</code> constants</div>
+    <div style="display:grid;gap:6px">
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">-1</code>
+        <span style="font-size:13px;color:#fff">temporal_context</span>
+        <span style="font-size:12px;color:var(--muted)">Current date/time + recent activity gist.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">0</code>
+        <span style="font-size:13px;color:#fff">user_context</span>
+        <span style="font-size:12px;color:var(--muted)"><code>profile_manager.get_user_profile_summary(user_id)</code> — "About the User".</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">1</code>
+        <span style="font-size:13px;color:#fff">bot_traits</span>
+        <span style="font-size:12px;color:var(--muted)">The bot's developed personality from <code>profile_attributes</code> where <code>entity_type=BOT</code>.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">2</code>
+        <span style="font-size:13px;color:#fff">base_prompt</span>
+        <span style="font-size:12px;color:var(--muted)">The bot's <code>system_prompt</code> from <code>bots.yaml</code> / DB.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">3</code>
+        <span style="font-size:13px;color:#fff">memory_context</span>
+        <span style="font-size:12px;color:var(--muted)">Cold-start memory hits (only when history &lt; 4 messages).</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">4</code>
+        <span style="font-size:13px;color:#fff">tools</span>
+        <span style="font-size:12px;color:var(--muted)">Tool catalog rendered for the active <code>tool_format</code> (or just the memory tool for non-tool memory bots).</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">5</code>
+        <span style="font-size:13px;color:#fff">client_context</span>
+        <span style="font-size:12px;color:var(--muted)">System context passed by the calling client (e.g. avatar info from bawthub).</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 200px 1fr;gap:14px;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.025)">
+        <code style="color:#bcefff;font-size:12px">6</code>
+        <span style="font-size:13px;color:#fff">global_instructions</span>
+        <span style="font-size:12px;color:var(--muted)"><code>GLOBAL_SYSTEM_PROMPT</code> — conversation recall + cross-bot memory guidance.</span>
+      </div>
+    </div>
+  </div>
+
+  <p>Sections are added with <code>add_section(name, content, position=...)</code>. Empty content is silently dropped. Sections can be disabled (kept in the builder but excluded from the build) — useful for hooks that want to suppress a default section without removing it. Calling <code>builder.build()</code> joins enabled sections by <code>\n\n</code> in position order.</p>
+
+  <p>Tools deserve a note here. Three branches:</p>
+  <ul>
+    <li><b>Tool bot with memory:</b> full tool catalog, including <code>memory</code>, <code>history</code>, <code>profile</code>, <code>self</code>, plus the optional <code>search</code>, <code>home</code>, <code>model</code>, <code>news</code>, <code>web_fetch</code>, and HA-native tools where their clients are present.</li>
+    <li><b>Tool bot without memory:</b> same catalog minus <code>memory</code>, <code>history</code>, <code>profile</code>, <code>self</code> (filtered out by name).</li>
+    <li><b>Memory bot without <code>uses_tools</code>:</b> the pipeline still injects a single read-only <code>memory</code> tool so the bot can search memories on demand, and flips <code>use_tools=True</code> so the tool loop runs. This is how <code>spark</code>-style "no tools but still smart about memory" bots work.</li>
+  </ul>
+
+  <h2 id="stage3"><span class="num">05</span> Stage 3 — memory retrieval (cold-start only).</h2>
+  <p>This stage is deliberately small. With history present, the model can call <code>memory_search</code> on demand via the tool loop — which gives it explicit, query-shaped access rather than a static dump. The retrieval stage only fires for cold starts:</p>
+
+  <div class="callout spec">
+    <div class="ic">✦</div>
+    <div>
+      <strong>Cold-start priming.</strong>
+      <p>If <code>history_manager.messages</code> has 3 or fewer entries, the pipeline runs a single semantic search for the user's prompt with <code>n_results=3</code> and <code>min_relevance=config.MEMORY_MIN_RELEVANCE</code> and renders the hits via <code>memory.context_builder.build_memory_context_string</code>, then injects them as a <code>cold_start_memory</code> section in the prompt builder. With more history, this stage does nothing — the model will recall on demand via the tool loop. No prophylactic injection.</p>
+    </div>
+  </div>
+
+  <h2 id="stage4"><span class="num">06</span> Stage 4 — history filter.</h2>
+  <p>Very simple by design: <code>include_history</code> defaults to <code>True</code>. The token-budget logic for trimming history lives one stage later, in message assembly, where we know the client's effective context window. The filter stage is the hook point if you want to override per-turn (e.g. for raw single-shot completions).</p>
+
+  <h2 id="stage5"><span class="num">07</span> Stage 5 — message assembly.</h2>
+  <p>Builds the final <code>list[Message]</code> the client will send to the LLM:</p>
+  <ol>
+    <li><b>System message.</b> One <code>Message(role="system", content=prompt_builder.build())</code>.</li>
+    <li><b>History.</b> If included, fetched via <code>history_manager.get_context_messages(max_tokens=budget)</code>. The budget defaults to <code>config.MAX_CONTEXT_TOKENS</code>, but if that's <code>0</code> (auto), it's computed as <code>llm_client.effective_context_window - llm_client.effective_max_tokens</code> — i.e. the input budget is whatever's left after reserving the output budget.</li>
+    <li><b>User prompt.</b> Only appended explicitly if history is not being included (otherwise the history manager has already received the user message via <code>add_message</code> before pipeline execution).</li>
+  </ol>
+
+  <p>History messages flow through filtered: only roles <code>user</code>, <code>assistant</code>, and <code>summary</code> survive. The <code>summary</code> role is converted to <code>system</code> at the API boundary — but the pipeline keeps it tagged so summaries are visually distinguishable in turn logs.</p>
+
+  <h2 id="stage6"><span class="num">08</span> Stage 6 — execute.</h2>
+  <p>The branching point. If <code>use_tools</code> is set and any tool-providing client (memory, home, HA-native, news, web-fetch) is present, the stage calls <code>tools.query_with_tools(...)</code> — that constructs a <code>ToolLoop</code> (see the tools page) and runs the multi-turn dispatch until the model produces a non-tool response or hits the iteration limit. Otherwise it calls <code>llm_client.query(...)</code> directly.</p>
+
+  <p>Either way, the response is stored on <code>ctx.response</code>; tool interactions accumulate in <code>ctx.tool_context</code> (summary string for history persistence) and <code>ctx.tool_call_details</code> (per-call dicts for the turn log).</p>
+
+  <h2 id="stage7"><span class="num">09</span> Stage 7 — post-process.</h2>
+  <p>Writes the assistant response to history via <code>history_manager.add_message("assistant", response)</code>. If tools ran, appends a <code>[Tool Results @ {timestamp}]</code> system message immediately after, so the next turn's history view sees the tool context inline. Records final stage output for the turn log.</p>
+
+  <p>Notably, <em>fact extraction does not happen here.</em> Despite the docstring's hint, the extraction pipeline is owned by the background scheduler (<code>service/scheduler.py</code>) and runs asynchronously against finished turns. This keeps the response latency clean — extraction can take seconds and uses an external LLM call.</p>
+
+  <h2 id="hooks"><span class="num">10</span> Hooks and decision overrides.</h2>
+  <p>Both extension surfaces exist:</p>
+  <ul>
+    <li><code>pipeline.add_hook(stage, callable)</code> — register a function that receives <code>PipelineContext</code> after the default stage logic. Used internally for, e.g., the <code>botchat</code> route adding extra system context.</li>
+    <li><code>pipeline.override_decision(name, value)</code> — force <code>use_tools</code> / <code>use_memory</code> / <code>use_search</code> / <code>skip_history</code> independent of bot config. Used by the raw <code>/v1/llm/complete</code> endpoint and by tests.</li>
+  </ul>
+
+  <h2 id="lifecycle"><span class="num">11</span> Model lifecycle.</h2>
+  <p>A peer to the pipeline lives in <code>core/model_lifecycle.py</code>: <code>ModelLifecycleManager</code> is a thread-safe singleton that tracks the currently loaded primary model and provides switching primitives:</p>
+  <ul>
+    <li>One primary model loaded at a time. This matters for GGUF and vLLM — both hold significant GPU memory.</li>
+    <li><code>unload_current_model()</code> calls the client's own <code>unload()</code>, then forces <code>gc.collect()</code>. <code>LlamaCppClient</code> overrides <code>unload</code> to release the C++ <code>Llama</code> instance and clear CUDA caches.</li>
+    <li>The <code>model</code> tool exposed to bots lets them request a switch: "load me the bigger one for this task". The lifecycle manager owns the actual swap; the next request picks up the new client.</li>
+    <li>OpenAI / Grok / agent-backend clients are lightweight wrappers around HTTP and don't participate in unloading — switching between them is free.</li>
+  </ul>
+
+  <h2 id="status"><span class="num">12</span> Status surface.</h2>
+  <p><code>core/status.py</code> (695 lines) is the <code>llm --status</code> machinery. It checks every dependency: Postgres + pgvector reachability, MCP server health, Redis ping, Crawl4AI HTTP, HA MCP, search providers, model alias availability, embedding model presence, and the entry-point loading of agent backends. Its output drives both the CLI status pane and the <code>GET /v1/status</code> JSON response.</p>
+
+  <h2 id="files"><span class="num">13</span> Key files.</h2>
+  <div class="files">
+    <div class="fileref"><code>core/pipeline.py</code><div class="desc"><b>The seven stages.</b> 605 lines. <code>PipelineStage</code> enum, <code>PipelineContext</code> dataclass, <code>RequestPipeline</code> with one method per stage and a verbose log summary.</div></div>
+    <div class="fileref"><code>core/prompt_builder.py</code><div class="desc"><b><code>PromptBuilder</code>.</b> 276 lines. Named, positioned sections. <code>SectionPosition</code> constants. <code>build()</code>, <code>build_with_debug()</code>, <code>get_verbose_summary()</code>. The <code>GLOBAL_SYSTEM_PROMPT</code> string with conversation-recall and cross-bot guidance.</div></div>
+    <div class="fileref"><code>core/base.py</code><div class="desc"><b><code>BaseLLMBawt</code>.</b> 877 lines. Shared CLI/service init: bot resolution, memory client, profile manager, search client, history manager, adapter selection, pipeline assembly. Subclassed by <code>LLMBawt</code> (CLI) and <code>ServiceLLMBawt</code> (service).</div></div>
+    <div class="fileref"><code>core/client.py</code><div class="desc"><b>CLI <code>LLMBawt</code>.</b> 107 lines. OpenAI + Grok only — local models route through the service. Picks <code>GrokClient</code> vs <code>OpenAIClient</code> from model type.</div></div>
+    <div class="fileref"><code>core/model_lifecycle.py</code><div class="desc"><b><code>ModelLifecycleManager</code>.</b> 288 lines. Thread-safe singleton. Tracks current model, handles unloading, fires callbacks on switch.</div></div>
+    <div class="fileref"><code>core/status.py</code><div class="desc"><b>Status engine.</b> 695 lines. Health-check fan-out across every dependency, used by both <code>llm --status</code> and <code>/v1/status</code>.</div></div>
+  </div>
+
+  <div class="prevnext">
+    <a class="prev" href="/architecture/llm-bawt/api.html"><span class="lbl">Previous</span><span class="t">FastAPI service</span></a>
+    <a class="next" href="/architecture/llm-bawt/clients.html"><span class="lbl">Next</span><span class="t">Model clients</span></a>
+  </div>
+
+  <div class="pagefoot">
+    <span>Validated against <code>main</code> on <b>2026-05-13</b></span>
+    <span>Source: <a href="https://github.com/zenoran/llm-bawt/tree/main/src/llm_bawt/core">llm-bawt/src/llm_bawt/core</a></span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>

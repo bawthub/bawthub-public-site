@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deployment · BawtHub Architecture</title>
+<meta name="description" content="The runtime topology. Two hosts on the home LAN (echo and Unraid), three Docker subnets, an openresty edge, Nginx Proxy Manager doing the actual routing, Authelia gating everything with auth, and bridge containers as sidecars for each agent backend." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/bawthub" target="_blank" rel="noopener">Source ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> cross-cutting · deployment</div>
+    <h1 class="page-title">Two hosts, three subnets, one <em>edge</em>.</h1>
+    <p class="lede">BawtHub runs on home hardware — a residential Spectrum connection in front of two physical hosts on the LAN. Public traffic terminates at openresty, gets routed by Nginx Proxy Manager, gates through Authelia for anything sensitive, and lands on either the BawtHub frontend on <code>echo</code> or a service container on Unraid. There's no Kubernetes, no overlay network spanning hosts — just Docker bridge networks, br0/br0.2 ipvlan adapters, and an SSH-reachable boundary between the two boxes.</p>
+    <div class="meta">
+      <span><b>Public IP:</b> <code>204.210.248.216</code> (Spectrum residential)</span>
+      <span><b>Edge:</b> openresty → NPM → backends</span>
+      <span><b>Auth:</b> Authelia at <code>auth.bawthub.com</code> / <code>auth.ferreri.us</code> / <code>auth.zenoran.com</code></span>
+    </div>
+  </div>
+
+  <h2 id="hosts"><span class="num">01</span> Two physical hosts.</h2>
+  <p>Everything runs on two machines:</p>
+
+  <table class="spec">
+    <thead><tr><th>Host</th><th>Role</th><th>LAN IP</th><th>What lives here</th></tr></thead>
+    <tbody>
+      <tr><td><code>echo</code></td><td>Workstation / compute</td><td><code>10.0.0.101</code></td><td>BawtHub frontend + backend, llm-bawt-app (FastAPI + GPU), all three agent bridges, Redis, the moshi STT/TTS pair, traefik, the playwright MCP, crawl4ai, nocodb</td></tr>
+      <tr><td><code>unraid</code></td><td>NAS / always-on services</td><td><code>10.0.0.99</code> (mgmt) + <code>10.0.2.x</code> (br0.2)</td><td>Postgres (pgvector), Nginx Proxy Manager, Authelia, OAuth2 Proxy, AdGuard Home, Home Assistant, the bawthub-public-site nginx, all the *arr/media stack, Vaultwarden, etc.</td></tr>
+    </tbody>
+  </table>
+
+  <p>echo is the compute box — it has the GPU for vLLM/llama.cpp + the moshi voice pipeline, the agent SDKs, and the live-reloading frontend. Unraid is the everything-else box: it holds the storage array, runs the long-lived infrastructure services, and is where the reverse proxy + auth stack live. Postgres lives on Unraid so that even if echo reboots, the database (which both echo and BawtHub depend on) stays up.</p>
+
+  <h2 id="networks"><span class="num">02</span> Three Docker networks (per host).</h2>
+  <p>There's no overlay network connecting the two hosts. Docker bridges on each host stay local; cross-host traffic goes over the LAN by IP.</p>
+
+  <table class="spec">
+    <thead><tr><th>Network</th><th>Host</th><th>Driver</th><th>Subnet</th><th>Used by</th></tr></thead>
+    <tbody>
+      <tr><td><code>br0</code></td><td>unraid</td><td>ipvlan</td><td><code>10.0.0.0/24</code> (LAN)</td><td>Containers that need a LAN IP indistinguishable from physical hosts (legacy)</td></tr>
+      <tr><td><code>br0.2</code></td><td>unraid</td><td>ipvlan</td><td><code>10.0.2.0/24</code> (VLAN 2 — services)</td><td>NPM (<code>10.0.2.2</code>), Authelia (<code>10.0.2.99</code>), <code>bawthub-public-site</code> (<code>10.0.2.36</code>), Postgres, most of the rest</td></tr>
+      <tr><td><code>bridge</code></td><td>unraid</td><td>bridge</td><td><code>172.17.0.0/16</code></td><td>Containers that don't need a routable IP (vaultwarden, etc.)</td></tr>
+      <tr><td><code>bawthub_default</code></td><td>echo</td><td>bridge</td><td><code>172.19.0.0/16</code></td><td>traefik, frontend, backend, tts, stt, nocodb</td></tr>
+      <tr><td><code>llm-bawt_default</code></td><td>echo</td><td>bridge</td><td><code>172.18.0.0/16</code></td><td>llm-bawt-app, redis, all three bridges, playwright-mcp, crawl4ai</td></tr>
+    </tbody>
+  </table>
+
+  <p>The two compose projects on echo (<code>bawthub</code> and <code>llm-bawt</code>) deliberately stay on separate bridge networks. They communicate through <code>host.docker.internal:8642</code> instead of a shared network — every compose service includes <code>extra_hosts: host.docker.internal:host-gateway</code> for exactly this purpose. The benefit is that either stack can be torn down and recreated without affecting the other.</p>
+
+  <h2 id="topology"><span class="num">03</span> Edge topology.</h2>
+
+  <div class="diagram">
+    <div class="diagram-title">Request flow · external → backend</div>
+
+    <div style="display:grid;gap:10px">
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,210,79,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff0bf;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ffd24f;box-shadow:0 0 10px #ffd24f"></span>Internet</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill gold">DNS @ Porkbun</span><span class="pill"><code style="font-size:11px;color:#fff0bf;background:none;border:none;padding:0">app.bawthub.com</code></span><span class="pill"><code style="font-size:11px;color:#fff0bf;background:none;border:none;padding:0">bawthub.com</code></span><span class="pill"><code style="font-size:11px;color:#fff0bf;background:none;border:none;padding:0">echo.ferreri.us</code></span><span class="pill">→ <code style="font-size:11px;color:#fff0bf;background:none;border:none;padding:0">204.210.248.216</code></span></div>
+      </div>
+      <div style="text-align:center;font-size:14px;color:var(--dim);letter-spacing:.5em">↓</div>
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,99,216,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#ffd3f7;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ff63d8;box-shadow:0 0 10px #ff63d8"></span>Edge</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill pink">openresty (TLS termination)</span><span class="pill">Spectrum gateway</span><span class="pill">port 443 only</span></div>
+      </div>
+      <div style="text-align:center;font-size:14px;color:var(--dim);letter-spacing:.5em">↓</div>
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,209,255,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#bcefff;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#4fd1ff;box-shadow:0 0 10px #4fd1ff"></span>Routing</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill cyan">NginxProxyManager @ <code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">10.0.2.2</code></span><span class="pill">per-host <code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">.conf</code> files</span><span class="pill">Let's Encrypt via Porkbun DNS-01</span></div>
+      </div>
+      <div style="text-align:center;font-size:14px;color:var(--dim);letter-spacing:.5em">↓</div>
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(101,232,155,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a8f1c5;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#65e89b;box-shadow:0 0 10px #65e89b"></span>Auth gate</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill green">Authelia @ <code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">10.0.2.99:9091</code></span><span class="pill">2FA + SSO</span><span class="pill"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">auth.bawthub.com</code> portal</span></div>
+      </div>
+      <div style="text-align:center;font-size:14px;color:var(--dim);letter-spacing:.5em">↓</div>
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(139,92,246,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#d9c8ff;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 10px #8b5cf6"></span>Backends</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill violet">echo @ <code style="font-size:11px;color:#d9c8ff;background:none;border:none;padding:0">10.0.0.101:80</code> (traefik)</span><span class="pill violet">bawthub-public-site @ <code style="font-size:11px;color:#d9c8ff;background:none;border:none;padding:0">10.0.2.36:80</code></span><span class="pill violet">Various Unraid services</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="hostnames"><span class="num">04</span> Hostnames and what they route to.</h2>
+  <p>The naming model has two flavors. Internal LAN hostnames live under <code>*.lan.ferreri.us</code> and <code>*.lan.zenoran.com</code> and resolve only inside the LAN via AdGuard Home rewrites. Public hostnames live at the bare domains and resolve to <code>204.210.248.216</code> via Porkbun.</p>
+
+  <table class="spec">
+    <thead><tr><th>Hostname</th><th>Visibility</th><th>Auth?</th><th>Routes to</th></tr></thead>
+    <tbody>
+      <tr><td><code>bawthub.com</code> / <code>www.bawthub.com</code></td><td>Public</td><td>None</td><td><code>bawthub-public-site</code> @ <code>10.0.2.36:80</code> (nginx:alpine serving this very site)</td></tr>
+      <tr><td><code>app.bawthub.com</code></td><td>Public</td><td>Authelia</td><td><code>echo</code> @ <code>10.0.0.101:80</code> → traefik → bawthub-frontend</td></tr>
+      <tr><td><code>auth.bawthub.com</code></td><td>Public</td><td>(it is the auth portal)</td><td>Authelia @ <code>10.0.2.99:9091</code></td></tr>
+      <tr><td><code>echo.ferreri.us</code> / <code>echo.zenoran.com</code></td><td>Public</td><td>Authelia</td><td><code>echo</code> @ <code>10.0.0.101:80</code> (same as <code>app.bawthub.com</code>; traefik fans out by Host header)</td></tr>
+      <tr><td><code>echo.lan.ferreri.us</code> / <code>echo.lan.zenoran.com</code></td><td>LAN only</td><td>None (LAN-trusted)</td><td>Same — but resolved by AdGuard, bypassing the public path entirely</td></tr>
+      <tr><td><code>dev.echo.lan.*</code></td><td>LAN only</td><td>None</td><td>Same container — legacy alias kept working</td></tr>
+      <tr><td><code>snapshot.echo.lan.*</code></td><td>LAN only</td><td>None</td><td>Opt-in baked snapshot frontend (compose profile <code>snapshot</code>) — for A/B compares</td></tr>
+      <tr><td><code>vault.ferreri.us</code>, <code>plex.ferreri.us</code>, etc.</td><td>Public</td><td>Authelia (most)</td><td>Direct container on Unraid (per NPM proxy host)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout spec">
+    <div class="ic">✦</div>
+    <div>
+      <strong>The LAN naming convention.</strong>
+      <p><code>*.lan.ferreri.us</code> / <code>*.lan.zenoran.com</code> are internal-only. They use real, paid TLDs (so wildcard TLS works without a self-signed CA), but DNS resolution happens at AdGuard Home which intercepts and rewrites these to LAN IPs. Public DNS has no record for them. The non-<code>.lan.</code> bare-domain variants (<code>echo.ferreri.us</code>) resolve publicly through <code>204.210.248.216</code> and gate through the full NPM + Authelia stack. Same underlying service, two paths to it, different trust levels.</p>
+    </div>
+  </div>
+
+  <h2 id="echo"><span class="num">05</span> Echo: the compute box.</h2>
+  <p>echo runs two compose projects (<code>bawthub</code> and <code>llm-bawt</code>) plus a few standalone containers. The currently-running set:</p>
+
+  <table class="spec">
+    <thead><tr><th>Container</th><th>Image</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>bawthub-traefik-1</code></td><td><code>traefik:v3.6.14</code></td><td>HTTP fan-out by Host header. Catches every public + LAN hostname for the frontend container.</td></tr>
+      <tr><td><code>bawthub-frontend-1</code></td><td><code>bawthub-frontend:latest</code></td><td>Next.js 15 app with hot-reload (<code>frontend/</code> bind-mounted). <em>This container is the deploy</em> — edit a file, HMR picks it up, users see it.</td></tr>
+      <tr><td><code>bawthub-backend-1</code></td><td><code>bawthub-backend:latest</code></td><td>Python FastAPI backend that owns the voice pipeline and a few /api/* routes that aren't frontend-owned. Bound to <code>/api</code> with <code>priority=100</code> as a catch-all.</td></tr>
+      <tr><td><code>bawthub-tts-1</code> / <code>bawthub-stt-1</code></td><td><code>moshi-server-prebuilt</code></td><td>GPU-pinned moshi voice pipeline — TTS on port 8089, STT on 8090.</td></tr>
+      <tr><td><code>llm-bawt-app</code></td><td><code>llm-bawt-app</code></td><td>FastAPI service on <code>:8642</code>, MCP server on <code>:8001</code>. Holds the bot configs, memory pipeline, and chat-completion router.</td></tr>
+      <tr><td><code>llm-bawt-redis</code></td><td><code>redis:7-alpine</code></td><td>Event bus for the bridges. <code>maxmemory 128mb</code>, allkeys-lru.</td></tr>
+      <tr><td><code>llm-bawt-openclaw-bridge</code></td><td><code>llm-bawt-bridge</code></td><td>WebSocket client to the remote OpenClaw gateway. Translates upstream events to <code>OpenClawEvent</code>s.</td></tr>
+      <tr><td><code>llm-bawt-claude-code-bridge</code></td><td><code>llm-bawt-bridge</code></td><td>Spawns the Claude Code SDK child process. OAuth via your Claude Max subscription.</td></tr>
+      <tr><td><code>llm-bawt-codex-bridge</code></td><td><code>llm-bawt-bridge</code></td><td>Talks JSON-RPC to a static-pie Rust binary. OAuth via your ChatGPT subscription.</td></tr>
+      <tr><td><code>llm-bawt-playwright-mcp</code></td><td><code>mcp/playwright</code></td><td>Headless browser MCP server. Token-cost guarded with <code>--snapshot-mode=none</code>.</td></tr>
+      <tr><td><code>llm-bawt-crawl4ai</code></td><td><code>unclecode/crawl4ai</code></td><td>Web-fetch service used by the WebFetch tool.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="bridges"><span class="num">06</span> Bridges as agent sidecars.</h2>
+  <p>The three bridge containers (<code>openclaw-bridge</code>, <code>claude-code-bridge</code>, <code>codex-bridge</code>) all share one Docker image — <code>llm-bawt-bridge</code> from <code>Dockerfile.bridge</code> — and are started with different module entrypoints. The image runs Python 3.12-slim, non-root user <code>bridge</code>, and bind-mounts the host's <code>~/dev</code> directory at <code>/home/bridge/dev</code>.</p>
+
+  <p>That bind mount is the key design choice. Both Claude Code and Codex are agent harnesses — they need filesystem access to read and edit code. The bridges <em>are</em> the workspace: when one of those bots executes <code>Edit</code> or <code>Bash</code>, it's writing to the same files your editor on the host sees. The host's <code>~/.ssh</code> is also mounted read-only so the agents can clone from GitHub and SSH between hosts. The bridges themselves talk to Redis at <code>redis:6379</code> over the <code>llm-bawt_default</code> bridge network.</p>
+
+  <p>Each agent's auth credentials are bind-mounted from the host config dir:</p>
+  <ul>
+    <li>Claude Code: <code>~/.config/claude-code-bridge/.claude.json</code> + <code>~/.config/claude-code-bridge/</code> for settings, skills, and SOUL.md.</li>
+    <li>Codex: <code>~/.codex/auth.json</code> (RW so the binary can self-refresh OAuth tokens — <code>codex login</code> on the host self-heals the bridge with no docker restart).</li>
+    <li>OpenClaw: gateway URL + token in <code>.env</code>.</li>
+  </ul>
+
+  <p>Health checks expose <code>/health</code> on ports 8680 (OpenClaw), 8681 (Claude Code), 8682 (Codex). All three depend on Redis being healthy and the main app being started.</p>
+
+  <h2 id="unraid"><span class="num">07</span> Unraid: the always-on services.</h2>
+  <p>Unraid runs ~30 containers, but only a handful matter for BawtHub:</p>
+
+  <table class="spec">
+    <thead><tr><th>Container</th><th>Image</th><th>Network</th><th>IP</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>NginxProxyManager</code></td><td><code>jlesage/nginx-proxy-manager</code></td><td>br0.2</td><td><code>10.0.2.2</code></td><td>The reverse proxy doing actual host-based routing. Admin UI at <code>https://npm.lan.zenoran.com</code> (port 81 internal).</td></tr>
+      <tr><td><code>Authelia</code></td><td><code>authelia/authelia</code></td><td>br0.2</td><td><code>10.0.2.99</code></td><td>SSO + 2FA. NPM does an <code>auth_request</code> to <code>/authz/auth-request</code>; failed auths redirect to <code>auth.bawthub.com</code>.</td></tr>
+      <tr><td><code>OAuth2-Proxy</code> / <code>OAuth2-Proxy-Zenoran</code></td><td><code>quay.io/oauth2-proxy/oauth2-proxy</code></td><td>br0.2</td><td>—</td><td>Older auth path still wired for some <code>zenoran.com</code> subdomains.</td></tr>
+      <tr><td><code>postgres-pgvector</code></td><td><code>timescale/timescaledb-ha:pg16</code></td><td>br0.2</td><td>—</td><td>The shared database for llm-bawt and BawtHub. pgvector ships in the image.</td></tr>
+      <tr><td><code>bawthub-public-site</code></td><td><code>nginx:alpine</code></td><td>br0.2</td><td><code>10.0.2.36</code></td><td>Static nginx serving the marketing/architecture site at <code>bawthub.com</code>. The pages you're reading right now.</td></tr>
+      <tr><td><code>AdGuard-Home</code></td><td><code>adguard/adguardhome</code></td><td>—</td><td>—</td><td>LAN DNS + ad-blocking. Resolves <code>*.lan.ferreri.us</code> / <code>*.lan.zenoran.com</code> to LAN IPs.</td></tr>
+      <tr><td><code>vaultwarden</code></td><td><code>vaultwarden/server</code></td><td>—</td><td><code>172.17.0.5</code></td><td>Self-hosted Bitwarden at <code>vault.ferreri.us</code>. Agents fetch API keys from here.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="auth"><span class="num">08</span> Authelia gating.</h2>
+  <p>NPM is configured per-host with an <code>auth_request</code> directive that calls Authelia's <code>/authz/auth-request</code> endpoint. If the request has a valid session cookie (matching one of Authelia's configured users), Authelia returns 200 + identity headers (<code>Remote-User</code>, <code>Remote-Email</code>, <code>Remote-Groups</code>); if not, it returns 401 and NPM redirects to <code>https://auth.bawthub.com</code> for login.</p>
+  <p>The auth-portal proxy host (NPM proxy_host #39, <code>auth.bawthub.com</code>) is special — it must <em>not</em> apply <code>server_proxy[.]conf</code> to itself or it'd loop. It's also added to <code>$oauth2_bypass</code> in <code>http_top.conf</code>. The unraid-ops skill captures this as a recurring footgun.</p>
+  <p>Identity headers from Authelia are forwarded as <code>X-Forwarded-User</code> / <code>X-Forwarded-Email</code> / <code>X-Auth-Request-User</code> / <code>X-Auth-Request-Email</code> / <code>Remote-User</code> / <code>Remote-Email</code>. BawtHub's frontend reads <code>X-Forwarded-Email</code> as the canonical user identity for its <code>entityId</code> column.</p>
+
+  <h2 id="public-site"><span class="num">09</span> The public site.</h2>
+  <p>This very page is served by a separate, intentionally minimal container — <code>bawthub-public-site</code>, plain <code>nginx:alpine</code> on Unraid <code>br0.2</code> at <code>10.0.2.36</code>. NPM routes the bare apex (<code>bawthub.com</code> and <code>www.bawthub.com</code>) here with no Authelia gate, because the marketing/architecture pages are deliberately public.</p>
+  <p>The deployment story for this site is dead simple: edit HTML, copy to <code>/mnt/user/appdata/bawthub-public-site/</code>, done. There is no build step, no framework, no JS framework dependency tree. Just static HTML, one shared <code>site.css</code>, one shared <code>site.js</code>, and the Inter web font.</p>
+
+  <h2 id="dev-loop"><span class="num">10</span> The dev loop.</h2>
+  <p>BawtHub's frontend is live-reloaded — that's the deploy. The <code>frontend</code> container bind-mounts <code>./frontend</code> from disk and runs <code>next dev --webpack</code>. Editing a <code>.ts</code>/<code>.tsx</code>/<code>.css</code> file triggers webpack HMR; users see the change without a container restart.</p>
+  <p>llm-bawt's main app similarly mounts <code>src/</code> in dev mode (the FastAPI worker reloads on Python file changes), though changes to that container's dependencies require a rebuild. The bridges, since they're share an image, get rebuilt with <code>make rebuild-bridge</code> when the Dockerfile.bridge changes — but the bind-mounted <code>~/dev</code> + the live-mounted Python sources mean most changes don't need an image build.</p>
+
+  <div class="callout warn">
+    <div class="ic">⚠</div>
+    <div>
+      <strong>Production = HMR. There is no separate "prod" build step.</strong>
+      <p>BawtHub's <code>app.bawthub.com</code> is served by the same hot-reload container as <code>echo.lan.zenoran.com</code>. The compose profile <code>snapshot</code> can spin up a parallel <code>frontend-prod</code> service that bakes the code into the image, but it serves only <code>snapshot.echo.lan.*</code> — it's for A/B comparing against the live HMR build. Pushing to <code>main</code> + <code>git pull</code> on <code>echo</code> is the release.</p>
+    </div>
+  </div>
+
+  <h2 id="dns"><span class="num">11</span> DNS recap.</h2>
+  <ul>
+    <li><b>Public records</b> at Porkbun. <code>app.bawthub.com</code>, <code>auth.bawthub.com</code>, <code>bawthub.com</code>, <code>www.bawthub.com</code>, <code>echo.ferreri.us</code>, <code>echo.zenoran.com</code>, and a long tail of <code>*.ferreri.us</code> service subdomains all point at <code>204.210.248.216</code>.</li>
+    <li><b>LAN records</b> via AdGuard rewrite rules: <code>*.lan.ferreri.us</code> and <code>*.lan.zenoran.com</code> resolve to LAN IPs internally only. AdGuard is the DHCP-advertised DNS server, so every device on the LAN sees these names.</li>
+    <li><b>TLS certificates</b> via Let's Encrypt DNS-01 challenge through Porkbun's API. NPM manages renewal; the <code>npm-17</code> cert covers <code>bawthub.com</code> + Subject Alternative Names for all the subdomains.</li>
+  </ul>
+
+  <h2 id="files"><span class="num">12</span> Key files + locations.</h2>
+  <div class="files">
+    <div class="fileref"><code>llm-bawt/docker-compose.yml</code><div class="desc"><b>The llm-bawt stack on echo.</b> Five services: app, redis, openclaw-bridge, claude-code-bridge, codex-bridge, playwright-mcp, crawl4ai. Bind mounts <code>~/.config/llm-bawt</code> for bots.yaml + .env.</div></div>
+    <div class="fileref"><code>llm-bawt/Dockerfile.bridge</code><div class="desc"><b>The shared bridge image.</b> Python 3.12-slim, non-root user <code>bridge</code>, pre-installed claude-agent-sdk + openai-codex-sdk + the agents' CLIs.</div></div>
+    <div class="fileref"><code>bawthub/docker-compose.yml</code><div class="desc"><b>The BawtHub stack on echo.</b> traefik + frontend (HMR, bind-mounted) + backend + tts + stt. <code>frontend-prod</code> hides behind compose profile <code>snapshot</code>.</div></div>
+    <div class="fileref"><code>bawthub/frontend/hot-reloading.Dockerfile</code><div class="desc"><b>The live frontend image.</b> Bind-mounts <code>./frontend</code>, runs <code>next dev --webpack</code>. This is the production image.</div></div>
+    <div class="fileref"><code>/mnt/user/appdata/NginxProxyManager/nginx/proxy_host/*.conf</code><div class="desc"><b>NPM routing rules on Unraid.</b> One file per proxy host, numbered. <code>37.conf</code> = app.bawthub.com, <code>38.conf</code> = bawthub.com apex, <code>39.conf</code> = auth.bawthub.com.</div></div>
+    <div class="fileref"><code>/mnt/user/appdata/NginxProxyManager/nginx/http_top.conf</code><div class="desc"><b>Where <code>$oauth2_bypass</code> lives.</b> Auth-portal hostnames go here so they don't loop back through the auth check.</div></div>
+    <div class="fileref"><code>/mnt/user/appdata/bawthub-public-site/</code><div class="desc"><b>Static content for bawthub.com.</b> The HTML files for this site, including this very page.</div></div>
+  </div>
+
+  <div class="prevnext">
+    <a class="prev" href="/architecture/data/"><span class="lbl">Previous</span><span class="t">Data + schema</span></a>
+    <a class="next" href="#" data-soon="1" data-name="Agents"><span class="lbl">Next</span><span class="t">Agents</span></a>
+  </div>
+
+  <div class="pagefoot">
+    <span>Validated against <code>main</code> on <b>2026-05-13</b></span>
+    <span>Source: <a href="https://github.com/zenoran/llm-bawt">llm-bawt</a> + <a href="https://github.com/zenoran/bawthub">bawthub</a></span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>

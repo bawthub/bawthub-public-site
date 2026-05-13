@@ -17,43 +17,43 @@
     'llm-bawt': {
       label: 'llm-bawt', icon: '⌬',
       items: [
-        { href: '/architecture/llm-bawt/overview.html',       icon: '◐', name: 'Overview',          desc: 'Big picture: what llm-bawt is and how requests flow.' },
-        { href: '/architecture/llm-bawt/api.html',            icon: '⌥', name: 'OpenAI-compat API',  desc: 'FastAPI service · 18+ route files · streaming.' },
-        { href: '/architecture/llm-bawt/pipeline.html',       icon: '⟶', name: 'Request pipeline',   desc: 'Turn lifecycle · prompt build · dispatch.' },
-        { href: '/architecture/llm-bawt/clients.html',        icon: '⊞', name: 'Model clients',      desc: 'OpenAI · Claude · Grok · vLLM · llama.cpp — one interface.' },
+        { href: '/architecture/llm-bawt/overview.html',       icon: '◐', name: 'Overview',          desc: 'Big picture: what llm-bawt is and how requests flow.', built: true },
+        { href: '/architecture/llm-bawt/api.html',            icon: '⌥', name: 'OpenAI-compat API',  desc: 'FastAPI service · 18 route modules · streaming.', built: true },
+        { href: '/architecture/llm-bawt/pipeline.html',       icon: '⟶', name: 'Request pipeline',   desc: 'Turn lifecycle · prompt build · dispatch.', built: true },
+        { href: '/architecture/llm-bawt/clients.html',        icon: '⊞', name: 'Model clients',      desc: 'OpenAI · Claude · Grok · vLLM · llama.cpp — one interface.', built: true },
         { href: '/architecture/llm-bawt/memory.html',         icon: '◈', name: 'Memory',             desc: 'pgvector · 5 layers · decay · supersede chains.', built: true },
-        { href: '/architecture/llm-bawt/tools.html',          icon: '⚙', name: 'Tools',              desc: 'Native tool loop + ReAct parser + streaming events.' },
-        { href: '/architecture/llm-bawt/agent-backends.html', icon: '⊡', name: 'Agent backends',     desc: 'The bridge pattern. How external agents become bots.' },
-        { href: '/architecture/llm-bawt/mcp-server.html',     icon: '⌘', name: 'MCP server',         desc: '56 tools over streamable-http for agents.' },
-        { href: '/architecture/llm-bawt/adapters.html',       icon: '◇', name: 'Prompt adapters',    desc: 'Per-model chat templates (dolphin, pygmalion, default).' },
+        { href: '/architecture/llm-bawt/tools.html',          icon: '⚙', name: 'Tools',              desc: 'Native tool loop + ReAct parser + streaming events.', built: true },
+        { href: '/architecture/llm-bawt/agent-backends.html', icon: '⊡', name: 'Agent backends',     desc: 'The bridge pattern. How external agents become bots.', built: true },
+        { href: '/architecture/llm-bawt/mcp-server.html',     icon: '⌘', name: 'MCP server',         desc: '60 tools over streamable-http for agents.', built: true },
+        { href: '/architecture/llm-bawt/adapters.html',       icon: '◇', name: 'Prompt adapters',    desc: 'Per-model chat templates (dolphin, pygmalion, default).', built: true },
       ]
     },
     bawthub: {
       label: 'BawtHub', icon: '◐',
       items: [
-        { href: '/architecture/bawthub/overview.html', icon: '◑', name: 'Overview',           desc: 'Next.js web + Python voice + 3D avatar.' },
-        { href: '/architecture/bawthub/frontend.html', icon: '◇', name: 'Frontend',           desc: 'Next.js 16 · React 19 · Zustand store.' },
-        { href: '/architecture/bawthub/voice.html',    icon: '◉', name: 'Voice pipeline',     desc: 'STT (moshi) · TTS · wake words · realtime ws.' },
-        { href: '/architecture/bawthub/avatar.html',   icon: '☻', name: '3D avatar',          desc: 'VRM/GLB · three.js · lip-sync.' },
-        { href: '/architecture/bawthub/surfaces.html', icon: '⌗', name: 'UI surfaces',        desc: 'Chat · agents · tools · unraid · memory dashboards.' },
+        { href: '/architecture/bawthub/overview.html', icon: '◑', name: 'Overview',           desc: 'Next.js web + Python voice + 3D avatar.', built: true },
+        { href: '/architecture/bawthub/frontend.html', icon: '◇', name: 'Frontend',           desc: 'Next.js 16 · React 19 · Zustand store.', built: true },
+        { href: '/architecture/bawthub/voice.html',    icon: '◉', name: 'Voice pipeline',     desc: 'STT (moshi) · TTS · pause-driven turns · realtime ws.', built: true },
+        { href: '/architecture/bawthub/avatar.html',   icon: '☻', name: '3D avatar',          desc: 'VRM/GLB · three.js · lip-sync.', built: true },
+        { href: '/architecture/bawthub/surfaces.html', icon: '⌗', name: 'UI surfaces',        desc: 'Chat · agents · tools · unraid · memory dashboards.', built: true },
       ]
     },
     agents: {
       label: 'Agents', icon: '⊡',
       items: [
-        { href: '/architecture/agents/task-system.html',         icon: '✓', name: 'Task system',        desc: 'Projects, plan, dispatch, review, MCP tools.' },
-        { href: '/architecture/agents/claude-code-bridge.html',  icon: '◈', name: 'Claude Code bridge', desc: 'SDK bridge · Redis fanout · streamed tool events.' },
-        { href: '/architecture/agents/codex-bridge.html',        icon: '◊', name: 'Codex bridge',       desc: 'OAuth · session queue · per-bot threads.' },
-        { href: '/architecture/agents/openclaw-bridge.html',     icon: '◍', name: 'OpenClaw bridge',    desc: 'The original. WebSocket · ingest · fanout.' },
-        { href: '/architecture/agents/inter-bot-comm.html',      icon: '⇄', name: 'Inter-bot comm',     desc: 'Bots messaging bots via MCP tools.' },
+        { href: '/architecture/agents/task-system.html',         icon: '✓', name: 'Task system',        desc: 'Projects, plan, dispatch, review, MCP tools.', built: true },
+        { href: '/architecture/agents/claude-code-bridge.html',  icon: '◈', name: 'Claude Code bridge', desc: 'SDK bridge · Redis fanout · streamed tool events.', built: true },
+        { href: '/architecture/agents/codex-bridge.html',        icon: '◊', name: 'Codex bridge',       desc: 'OAuth · session queue · per-bot threads.', built: true },
+        { href: '/architecture/agents/openclaw-bridge.html',     icon: '◍', name: 'OpenClaw bridge',    desc: 'The original. WebSocket · ingest · fanout.', built: true },
+        { href: '/architecture/agents/inter-bot-comm.html',      icon: '⇄', name: 'Inter-bot comm',     desc: 'Bots messaging bots via MCP tools.', built: true },
       ]
     },
     more: {
       label: 'More', icon: '⋯',
       items: [
-        { href: '/architecture/streaming/',  icon: '⌁', name: 'Streaming events', desc: 'Redis-backed event bus. The hard problem.' },
-        { href: '/architecture/data/',       icon: '⌗', name: 'Data & schema',    desc: 'Postgres · Prisma · turn logs · activity.' },
-        { href: '/architecture/deployment/', icon: '⌘', name: 'Deployment',       desc: 'Docker on Unraid · NPM · Authelia · br0.2.' },
+        { href: '/architecture/streaming/',  icon: '⌁', name: 'Streaming events', desc: 'Redis-backed event bus. The hard problem.', built: true },
+        { href: '/architecture/data/',       icon: '⌗', name: 'Data & schema',    desc: 'Postgres · Prisma · turn logs · activity.', built: true },
+        { href: '/architecture/deployment/', icon: '⌘', name: 'Deployment',       desc: 'Docker on Unraid · NPM · Authelia · br0.2.', built: true },
         { href: 'https://github.com/zenoran/llm-bawt', icon: '↗', name: 'llm-bawt on GitHub', desc: 'The public core repo.', built: true, external: true },
       ]
     },

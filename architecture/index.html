@@ -44,7 +44,7 @@
     <h1 class="page-title">A guided tour of the <em>stack</em>.</h1>
     <p class="lede">BawtHub is built on <code>llm-bawt</code> — a self-hosted, model-agnostic LLM platform with persistent personas, real-time voice, semantic memory, and agent orchestration. This documentation maps every layer. Pick a subsystem to dive in, or hit <kbd style="font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)">⌘K</kbd> to search.</p>
     <div class="meta">
-      <span><b>~20 pages</b> · 2 live, growing</span>
+      <span><b>22 pages</b> · audited against current code</span>
       <span><b>llm-bawt</b> public on GitHub</span>
       <span>Last updated 2026-05-13</span>
     </div>
@@ -57,18 +57,18 @@
     <div class="layer-row" style="--accent:#4fd1ff">
       <div class="lbl">Surfaces</div>
       <div class="row">
-        <a class="card" href="#" data-soon="1" data-name="BawtHub web"><div class="t">BawtHub web</div><div class="d">Next.js 16 · React 19 · Zustand store</div></a>
-        <a class="card" href="#" data-soon="1" data-name="Voice"><div class="t">Voice</div><div class="d">STT · TTS · wake words · realtime ws</div></a>
-        <a class="card" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener"><div class="t">CLI &amp; MCP</div><div class="d"><code>llm -b loopy …</code> · MCP tools for agents</div></a>
+        <a class="card" href="/architecture/bawthub/frontend.html"><div class="t">BawtHub web</div><div class="d">Next.js 16 · React 19 · Zustand store</div></a>
+        <a class="card" href="/architecture/bawthub/voice.html"><div class="t">Voice</div><div class="d">STT · TTS · pause-driven turns · realtime ws</div></a>
+        <a class="card" href="/architecture/llm-bawt/mcp-server.html"><div class="t">CLI &amp; MCP</div><div class="d"><code>llm -b loopy …</code> · MCP tools for agents</div></a>
       </div>
     </div>
     <div class="arrow">↓ ↓ ↓</div>
     <div class="layer-row" style="--accent:#8b5cf6">
       <div class="lbl">Core</div>
       <div class="row">
-        <a class="card" href="#" data-soon="1" data-name="OpenAI-compat API"><div class="t">OpenAI-compat API</div><div class="d">FastAPI · 18+ route files · streaming</div></a>
-        <a class="card" href="#" data-soon="1" data-name="Request pipeline"><div class="t">Request pipeline</div><div class="d">Turn lifecycle · prompt build · client dispatch</div></a>
-        <a class="card" href="#" data-soon="1" data-name="Tool execution"><div class="t">Tool execution</div><div class="d">Native loop · ReAct parser · streaming</div></a>
+        <a class="card" href="/architecture/llm-bawt/api.html"><div class="t">OpenAI-compat API</div><div class="d">FastAPI · 18 route modules · streaming</div></a>
+        <a class="card" href="/architecture/llm-bawt/pipeline.html"><div class="t">Request pipeline</div><div class="d">Turn lifecycle · prompt build · client dispatch</div></a>
+        <a class="card" href="/architecture/llm-bawt/tools.html"><div class="t">Tool execution</div><div class="d">Native loop · ReAct parser · streaming</div></a>
       </div>
     </div>
     <div class="arrow">↓ ↓ ↓</div>
@@ -76,26 +76,26 @@
       <div class="lbl">State</div>
       <div class="row">
         <a class="card" href="/architecture/llm-bawt/memory.html"><div class="t">Memory</div><div class="d">pgvector · 5 layers (messages, semantic, summaries, profile, sessions)</div></a>
-        <a class="card" href="#" data-soon="1" data-name="Data schema"><div class="t">Data schema</div><div class="d">Postgres · Prisma · turn logs · activity</div></a>
-        <a class="card" href="#" data-soon="1" data-name="MCP server"><div class="t">MCP server</div><div class="d">56 tools · cross-bot memory access · task ops</div></a>
+        <a class="card" href="/architecture/data/"><div class="t">Data schema</div><div class="d">Postgres · Prisma · turn logs · activity</div></a>
+        <a class="card" href="/architecture/llm-bawt/mcp-server.html"><div class="t">MCP server</div><div class="d">60 tools · cross-bot memory access · task ops</div></a>
       </div>
     </div>
     <div class="arrow">↓ ↓ ↓</div>
     <div class="layer-row" style="--accent:#ffd24f">
       <div class="lbl">Models</div>
       <div class="row">
-        <a class="card" href="#" data-soon="1" data-name="Provider abstraction"><div class="t">Provider abstraction</div><div class="d">OpenAI · Claude · Grok · Ollama · vLLM · llama.cpp</div></a>
-        <a class="card" href="#" data-soon="1" data-name="Prompt adapters"><div class="t">Prompt adapters</div><div class="d">Per-model chat template (dolphin, pygmalion, default)</div></a>
+        <a class="card" href="/architecture/llm-bawt/clients.html"><div class="t">Provider abstraction</div><div class="d">OpenAI · Claude · Grok · Ollama · vLLM · llama.cpp</div></a>
+        <a class="card" href="/architecture/llm-bawt/adapters.html"><div class="t">Prompt adapters</div><div class="d">Per-model chat template (dolphin, pygmalion, default)</div></a>
       </div>
     </div>
     <div class="arrow">↓ ↓ ↓</div>
     <div class="layer-row" style="--accent:#ff63d8">
       <div class="lbl">Agents</div>
       <div class="row">
-        <a class="card" href="#" data-soon="1" data-name="Claude Code bridge"><div class="t">Claude Code</div><div class="d">SDK bridge · Redis fanout · streamed tool events</div></a>
-        <a class="card" href="#" data-soon="1" data-name="Codex bridge"><div class="t">Codex</div><div class="d">OAuth · session queue · per-bot threads</div></a>
-        <a class="card" href="#" data-soon="1" data-name="OpenClaw bridge"><div class="t">OpenClaw</div><div class="d">First bridge · WS · ingest · fanout</div></a>
-        <a class="card" href="#" data-soon="1" data-name="Task system"><div class="t">Task system</div><div class="d">Projects · plan · dispatch · review</div></a>
+        <a class="card" href="/architecture/agents/claude-code-bridge.html"><div class="t">Claude Code</div><div class="d">SDK bridge · Redis fanout · streamed tool events</div></a>
+        <a class="card" href="/architecture/agents/codex-bridge.html"><div class="t">Codex</div><div class="d">OAuth · session queue · per-bot threads</div></a>
+        <a class="card" href="/architecture/agents/openclaw-bridge.html"><div class="t">OpenClaw</div><div class="d">First bridge · WS · ingest · fanout</div></a>
+        <a class="card" href="/architecture/agents/task-system.html"><div class="t">Task system</div><div class="d">Projects · plan · dispatch · review</div></a>
       </div>
     </div>
   </div>
@@ -108,23 +108,23 @@
       <div class="t">Memory <span class="ar">→</span></div>
       <div class="d">Five-layer state model: raw messages, semantic memories (with decay + supersede chains), rolling summaries, structured user profile, and sessions. The most opinionated subsystem.</div>
     </a>
-    <a class="soon" href="#" data-soon="1" data-name="Agent task system">
+    <a href="/architecture/agents/task-system.html">
       <div class="t">Agent task system <span class="ar">→</span></div>
       <div class="d">Plan → dispatch → execute → review, with markdown-typed projects, clean-context dispatch to bots, and MCP tools for agents to manage their own work.</div>
     </a>
-    <a class="soon" href="#" data-soon="1" data-name="Claude Code bridge">
+    <a href="/architecture/agents/claude-code-bridge.html">
       <div class="t">Claude Code bridge <span class="ar">→</span></div>
       <div class="d">How an external agent SDK plugs into the chat UI with full streaming tool events. The pattern repeats for Codex and OpenClaw.</div>
     </a>
-    <a class="soon" href="#" data-soon="1" data-name="MCP server">
+    <a href="/architecture/llm-bawt/mcp-server.html">
       <div class="t">MCP server <span class="ar">→</span></div>
-      <div class="d">56 tools exposed over <code>streamable-http</code>. Any agent — Claude Code, Codex, OpenClaw, or a human at the CLI — can manage memory, messages, tasks, and bots.</div>
+      <div class="d">60 tools exposed over <code>streamable-http</code>. Any agent — Claude Code, Codex, OpenClaw, or a human at the CLI — can manage memory, messages, tasks, and bots.</div>
     </a>
-    <a class="soon" href="#" data-soon="1" data-name="Streaming events">
+    <a href="/architecture/streaming/">
       <div class="t">Streaming events <span class="ar">→</span></div>
       <div class="d">The Redis-backed event bus that lets every backend (LLM tool loop, Claude Code, Codex, OpenClaw) emit tool calls and results in one unified format. The hard problem.</div>
     </a>
-    <a class="soon" href="#" data-soon="1" data-name="Model client abstraction">
+    <a href="/architecture/llm-bawt/clients.html">
       <div class="t">Model client abstraction <span class="ar">→</span></div>
       <div class="d">Every provider — cloud or local — behind one interface. Bots pick a model per turn; the same conversation can hop between OpenAI, Claude, and a local GGUF.</div>
     </a>
@@ -132,15 +132,15 @@
 
   <h3>Browse by component</h3>
   <div class="sectionidx">
-    <a class="soon" href="#" data-soon="1" data-name="llm-bawt overview">
+    <a href="/architecture/llm-bawt/overview.html">
       <div class="t">llm-bawt <span class="ar">→</span></div>
       <div class="d">The core platform. OpenAI-compatible API, memory, tools, agent backends, MCP server. Public on GitHub.</div>
     </a>
-    <a class="soon" href="#" data-soon="1" data-name="BawtHub overview">
+    <a href="/architecture/bawthub/overview.html">
       <div class="t">BawtHub <span class="ar">→</span></div>
       <div class="d">The frontend. Next.js web UI, Python voice backend, 3D avatar, multi-surface streaming consumer.</div>
     </a>
-    <a class="soon" href="#" data-soon="1" data-name="Deployment">
+    <a href="/architecture/deployment/">
       <div class="t">Deployment <span class="ar">→</span></div>
       <div class="d">Docker on Unraid · NPM reverse proxy · Authelia · multi-host networking · agent bridges as sidecars.</div>
     </a>

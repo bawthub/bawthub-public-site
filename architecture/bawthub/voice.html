@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Voice · BawtHub · Architecture</title>
+<meta name="description" content="The Python voice backend — fastrtc, Kyutai Moshi STT/TTS, msgpack websockets, a four-provider TTS registry, VAD-driven pause detection, mid-word interrupts, and the OpenAI Realtime wire protocol." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/bawthub" target="_blank" rel="noopener">Source ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> BawtHub · voice</div>
+    <h1 class="page-title">Microphone bytes to <em>spoken words</em>.</h1>
+    <p class="lede">The voice pipeline is the part of BawtHub with the hardest real-time constraints. Audio in, transcript out, LLM in the middle, audio back. The whole loop has to feel like a conversation — sub-second to first audio, mid-word interruptions, no buffer glitches when a sentence breaks at a comma. The architecture is forked from Kyutai's <code>unmute</code> reference stack and rebuilt around a four-provider TTS registry, a Quest-managed state machine, and the OpenAI Realtime API wire protocol.</p>
+    <div class="meta">
+      <span><b>Runtime:</b> Python 3.12 · FastAPI · fastrtc 0.0.23</span>
+      <span><b>STT:</b> Kyutai stt-1b-en_fr-candle (Moshi)</span>
+      <span><b>Default TTS:</b> Kyutai tts-1.6b-en_fr (Moshi · 24 kHz)</span>
+    </div>
+  </div>
+
+  <h2 id="lineage"><span class="num">01</span> Heritage: unmute, rebuilt.</h2>
+  <p>The bones of the pipeline come from Kyutai's <code>unmute</code> — their open-source reference for a fully self-hosted speech-to-speech assistant. The state machine (waiting_for_user / user_speaking / bot_speaking), the msgpack wire protocol for the Moshi STT/TTS servers, and the VAD-pause-detection model are all from there. What BawtHub layers on top is:</p>
+  <ul>
+    <li>A <b>multi-provider TTS registry</b> — Moshi is no longer the only TTS option; Azure, xAI Grok, and Kokoro can serve different voices in the same session.</li>
+    <li>An <b>llm-bawt back end</b> instead of unmute's bundled chatbot — meaning real conversation history, real memory, real tools, real personalities.</li>
+    <li>A <b>Quest-based supervisor</b> for the STT/TTS/LLM workers — co-managed lifecycles, retries with backoff, structured cancellation.</li>
+    <li>Production niceties — health endpoints, admin restart, voice browser, provider auto-discovery from env, container restart through a mounted Docker socket.</li>
+  </ul>
+
+  <h2 id="topology"><span class="num">02</span> The pipeline, top to bottom.</h2>
+  <div class="diagram">
+    <div class="diagram-title">A single turn · 24 kHz mono throughout</div>
+    <div style="display:grid;gap:8px">
+      <div style="padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,209,255,.05);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="pill cyan">browser</span><span style="color:var(--muted);font-size:13px">mic → Opus encoder worker → WebSocket frames</span></div>
+      <div style="text-align:center;color:var(--dim);font-size:12px">↓ <code>input_audio_buffer.append</code></div>
+      <div style="padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(139,92,246,.05);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="pill violet">bawthub backend</span><span style="color:var(--muted);font-size:13px">fastrtc handler · 480-sample frames · 24 kHz float32</span></div>
+      <div style="text-align:center;color:var(--dim);font-size:12px">↓ msgpack over ws · <code>send_audio()</code></div>
+      <div style="padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,210,79,.05);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="pill gold">moshi stt :8090</span><span style="color:var(--muted);font-size:13px">Word + EndWord + Step (pause prediction) messages</span></div>
+      <div style="text-align:center;color:var(--dim);font-size:12px">↓ when <code>pause_prediction &gt; 0.6</code> · flush + EOS</div>
+      <div style="padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,255,209,.05);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="pill teal">llm-bawt :8642</span><span style="color:var(--muted);font-size:13px">OpenAI-compat completions · word-by-word stream</span></div>
+      <div style="text-align:center;color:var(--dim);font-size:12px">↓ <code>tts.send(word)</code> per delta · 40-char prebuffer</div>
+      <div style="padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,99,216,.05);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="pill pink">tts provider</span><span style="color:var(--muted);font-size:13px">Moshi · Azure · Grok · Kokoro — chosen by voice id</span></div>
+      <div style="text-align:center;color:var(--dim);font-size:12px">↓ <code>response.audio.delta</code> · Opus chunks</div>
+      <div style="padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,209,255,.05);display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="pill cyan">browser</span><span style="color:var(--muted);font-size:13px">Opus decoder worker → AudioWorklet → speakers + AnalyserNode tap</span></div>
+    </div>
+  </div>
+
+  <h2 id="handler"><span class="num">03</span> The handler is the state machine.</h2>
+  <p><code>BawtHubHandler</code> in <code>bawthub/handler.py</code> is an <code>AsyncStreamHandler</code> from <code>fastrtc</code>. It runs one instance per connected client and owns three things:</p>
+  <ul>
+    <li>A <code>QuestManager</code> with three named workers: <code>stt</code>, <code>tts</code>, <code>llm</code>. Each Quest has init / run / close phases and survives partial failures.</li>
+    <li>A <code>Chatbot</code> with a small <code>chat_history</code> array. Conversation state is derived: <code>waiting_for_user</code> / <code>user_speaking</code> / <code>bot_speaking</code> based on whose turn it is in the history.</li>
+    <li>An asyncio <code>output_queue</code> that fastrtc drains to emit either audio frames, OpenAI Realtime events, or a <code>CloseStream</code>.</li>
+  </ul>
+
+  <p>The receive loop is the heart of it. Every frame from the browser (~80 ms of audio) gets:</p>
+  <ol>
+    <li>Forwarded to STT via <code>stt.send_audio(array)</code></li>
+    <li>Checked against the long-silence timer for nudge behavior</li>
+    <li>Tested for pause: if <code>stt.pause_prediction.value &gt; PAUSE_THRESHOLD</code> (default 0.6), the handler emits <code>InputAudioBufferSpeechStopped</code>, flushes 500 ms of silence into STT, and starts the LLM response</li>
+    <li>Tested for interrupt: if the bot is speaking and STT-VAD shows the user has resumed (and we're past the 3-second grace window), <code>interrupt_bot()</code> cancels the running LLM + TTS quests</li>
+  </ol>
+
+  <div class="callout spec">
+    <div class="ic">✦</div>
+    <div>
+      <strong>The 3-second uninterruptible window matters.</strong>
+      <p><code>UNINTERRUPTIBLE_BY_VAD_TIME_SEC = 3</code>. On Mac in particular, browser echo cancellation takes a beat to engage at turn start — so for the first 3 seconds of bot speech, the VAD signal alone can't interrupt. A real word from the STT still can. This was an empirical fix; the comment in <code>handler.py</code> explains it candidly.</p>
+    </div>
+  </div>
+
+  <h2 id="stt"><span class="num">04</span> STT: Kyutai Moshi over msgpack.</h2>
+  <p>The STT runs in its own GPU container — Kyutai's <code>moshi-server</code> with the <code>stt.toml</code> config:</p>
+  <table class="spec">
+    <thead><tr><th>Field</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Model</td><td><code>kyutai/stt-1b-en_fr-candle</code> · ~1B params, English + French</td></tr>
+      <tr><td>Audio tokenizer</td><td>Mimi (PyTorch 24 kHz)</td></tr>
+      <tr><td>ASR delay</td><td>6 tokens (~0.5 s)</td></tr>
+      <tr><td>Batch size</td><td>2 (helps with reconnect races)</td></tr>
+      <tr><td>Transformer</td><td>16 layers · 2048 d_model · 16 heads · 750-token context</td></tr>
+      <tr><td>Extra heads</td><td>4 heads × 6 dim — pause prediction + speaker turns</td></tr>
+    </tbody>
+  </table>
+
+  <p>The wire is msgpack over a websocket at <code>/api/asr-streaming</code>. The Python client (<code>bawthub/stt/speech_to_text.py</code>) sends raw float32 audio frames and receives a typed stream of:</p>
+  <ul>
+    <li><code>Word</code> — a partial transcription token with <code>start_time</code></li>
+    <li><code>EndWord</code> — explicit end-of-word marker</li>
+    <li><code>Step</code> — per-step pause-prediction probabilities (the VAD signal)</li>
+    <li><code>Marker</code> — for time-aligning events</li>
+    <li><code>Ready</code> / <code>Error</code></li>
+  </ul>
+
+  <p>The handler tracks <code>stt.pause_prediction</code> as an exponential moving average so the threshold check is stable across noisy frames. The "real" pause threshold is configurable via <code>BAWTHUB_PAUSE_THRESHOLD</code>; defaults to 0.6.</p>
+
+  <h2 id="tts-registry"><span class="num">05</span> TTS: a provider registry, not a single engine.</h2>
+  <p>BawtHub's TTS layer evolved from "Moshi only" to a pluggable registry. <code>TTSProviderRegistry</code> in <code>bawthub/tts/registry.py</code> manages a set of <code>BaseTTSProvider</code> instances and dispatches each request to the right one based on voice id.</p>
+
+  <table class="spec">
+    <thead><tr><th>Provider</th><th>Where it runs</th><th>Trigger</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>moshi</code></td><td>Local GPU container at :8089</td><td>Always — default fallback</td><td>1.6B params · 24 kHz · 18 voices in <code>voices.yaml</code> (VCTK + Expresso)</td></tr>
+      <tr><td><code>azure</code></td><td>Azure Speech cloud</td><td><code>AZURE_SPEECH_KEY</code> + region/endpoint set</td><td>Filterable voice catalog (default <code>curated</code> = en-US Dragon HD) to avoid 600+ voice picker</td></tr>
+      <tr><td><code>grok</code></td><td>xAI cloud</td><td><code>XAI_API_KEY</code> set</td><td>Default voice <code>eve</code> · latency mode toggle (quality vs ~60 ms savings)</td></tr>
+      <tr><td><code>kokoro</code></td><td>Adapter container</td><td>Compose overlay <code>docker-compose.kokoro.yml</code></td><td>Replaces Moshi container; Python adapter translates Kokoro to the Moshi protocol</td></tr>
+    </tbody>
+  </table>
+
+  <p>Provider selection is <b>voice-driven</b>. The registry inspects each provider's <code>available_voices</code> catalog and routes a request for <code>voice_id</code> to the provider that owns it. <code>BAWTHUB_TTS_DEFAULT_PROVIDER</code> overrides the tiebreaker for voice ids that aren't in any catalog. Auto-discovery is conservative: a provider that fails to construct (e.g. missing SDK, bad credentials) is dropped silently so the app still boots in a stripped-down environment.</p>
+
+  <h3>Health probing is lazy and cached</h3>
+  <p>Construction does <b>not</b> block on a network probe. The first request that asks "is this provider healthy?" pays the probe cost; subsequent requests within <code>HEALTH_TTL_SEC</code> (5 s default) read the cached result. Concurrent probes share a single in-flight check via an asyncio lock — so a thundering herd at startup doesn't slam Azure with twenty <code>list_voices</code> calls.</p>
+
+  <h2 id="tts-pipeline"><span class="num">06</span> Word-by-word TTS with a prebuffer.</h2>
+  <p>llm-bawt streams the LLM response word-by-word (one delta per word, no upstream sentence buffering). The handler's <code>_generate_response_task</code> pipes each delta into the TTS provider with one twist:</p>
+
+  <div class="callout warn">
+    <div class="ic">⚠</div>
+    <div>
+      <strong>Audio underrun fix: a 40-character prebuffer.</strong>
+      <p>When llm-bawt dropped upstream buffering (TASK-216), Moshi TTS could drain its audio queue faster than new words arrived, producing a 1–2 s gap after the opening phrase. The handler now collects the first ~40 chars (~6–8 short words) before flushing them to TTS in a burst, then streams word-by-word from there. <code>TTS_PREBUFFER_CHARS = 40</code> in <code>handler.py</code>.</p>
+    </div>
+  </div>
+
+  <p>The TTS provider streams back two message types: <code>TTSAudioChunk</code> (PCM at 24 kHz, mono) and <code>TTSWordTiming</code> (which word just got spoken, with start/stop seconds). The handler routes audio chunks to the output queue as <code>(sample_rate, np.ndarray)</code> tuples, and word timings as <code>ResponseTextDelta</code> events that the browser uses to update the floating transcript. Each word is also appended to <code>chat_history</code> only after the TTS confirms it — so the displayed transcript advances in lockstep with the audio.</p>
+
+  <h2 id="interrupt"><span class="num">07</span> Mid-word interrupts.</h2>
+  <p>The user can interrupt the bot at any time. Two signals trigger an interrupt:</p>
+  <ol>
+    <li><b>STT word arrival while bot is speaking.</b> A confident transcription token from the user during bot output → <code>interrupt_bot()</code>.</li>
+    <li><b>VAD probability dropping past a threshold</b> while bot is speaking, after the 3-second grace window.</li>
+  </ol>
+  <p><code>interrupt_bot()</code> cancels the LLM stream task, swaps the handler's <code>output_queue</code> to a fresh queue (so any in-flight TTS workers can't accidentally push to it), and sends <code>BawtHubInterruptedByVAD</code> to the browser. The browser stops playback by signalling the AudioWorklet to drop its buffered samples. Audio cuts mid-word — which is what feels conversational.</p>
+
+  <h2 id="protocol"><span class="num">08</span> Wire protocol: OpenAI Realtime, deliberately.</h2>
+  <p>The browser ↔ backend WebSocket speaks OpenAI Realtime API events, mapped to BawtHub's own <code>ora</code> module (<code>openai_realtime_api_events.py</code>). The choice is intentional — it keeps the door open to swap the backend for OpenAI's actual Realtime API or any compatible implementation.</p>
+
+  <table class="spec">
+    <thead><tr><th>Direction</th><th>Event</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>client → server</td><td><code>input_audio_buffer.append</code></td><td>Base64 Opus frame from mic encoder worker</td></tr>
+      <tr><td>client → server</td><td><code>session.update</code></td><td>Voice id, bot id, user id, tts_mode toggle, instructions</td></tr>
+      <tr><td>server → client</td><td><code>response.audio.delta</code></td><td>Base64 Opus chunk for the decoder worker</td></tr>
+      <tr><td>server → client</td><td><code>response.text.delta</code></td><td>Word-aligned transcript update for the floating UI</td></tr>
+      <tr><td>server → client</td><td><code>conversation.item.input_audio_transcription.delta</code></td><td>User-side STT word arrival</td></tr>
+      <tr><td>server → client</td><td><code>response.audio.done</code> / <code>response.text.done</code></td><td>End-of-turn handshake</td></tr>
+      <tr><td>server → client</td><td><code>bawthub.response_text_delta_ready</code></td><td>BawtHub-specific: LLM word arrived (vs TTS word emitted)</td></tr>
+      <tr><td>server → client</td><td><code>bawthub.interrupted_by_vad</code></td><td>Browser flushes audio worklet</td></tr>
+      <tr><td>server → client</td><td><code>bawthub.service_animation</code></td><td>Avatar animation cue parsed from LLM response</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="vad"><span class="num">09</span> About wake words.</h2>
+  <p>BawtHub doesn't ship a wake-word detector. The voice page assumes the user has pressed the call button — the WebSocket is opened intentionally, the screen is wake-locked, and the mic is live until the call ends. Pause detection is purely VAD-driven via Moshi STT's extra-head <code>pause_prediction</code> scores.</p>
+
+  <p>That said, the <i>downstream</i> consumers of BawtHub's voice (Home Assistant via the <code>bawthub_stt</code> / <code>bawthub_tts</code> custom components in <code>integrations/home_assistant/</code>) are typically paired with ESPHome Voice PE devices, which run their own on-device <code>microWakeWord</code> models. So while wake-word handling isn't inside BawtHub itself, the pipeline is designed to be a downstream of a wake-word gate when used as a Home Assistant voice provider.</p>
+
+  <h2 id="health"><span class="num">10</span> Health and admin.</h2>
+  <p>The voice backend exposes a handful of REST endpoints distinct from the WebSocket:</p>
+
+  <table class="spec">
+    <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /v1/health</code></td><td><code>{tts_up, stt_up, llm_up, ok}</code> — green/red lights in the UI</td></tr>
+      <tr><td><code>GET /v1/voices</code></td><td>Aggregated catalog from every registered provider</td></tr>
+      <tr><td><code>GET /v1/tts/admin/config</code></td><td>Current TTS service config + capabilities</td></tr>
+      <tr><td><code>PUT /v1/tts/admin/config</code></td><td>Mutate temperature, CFG, padding, default voice — written to <code>tts_admin_state.json</code></td></tr>
+      <tr><td><code>POST /v1/tts/preview</code></td><td>Synthesize a short sample with the given voice — used by the voice browser modal</td></tr>
+      <tr><td><code>POST /v1/tts/admin/restart</code></td><td>Run <code>restart_tts_container.sh</code> via the mounted Docker socket; report progress with operation ids</td></tr>
+      <tr><td><code>GET /v1/ha/weather</code></td><td>Home Assistant weather pull for the home page widget — kept here so the credential never reaches the frontend</td></tr>
+    </tbody>
+  </table>
+
+  <p>The TTS admin state lives at <code>bawthub/tts_admin_state.json</code> — a tiny JSON file on disk so changes survive container restarts. The frontend's <code>/tools/tts</code> page is the editor.</p>
+
+  <h2 id="files"><span class="num">11</span> Key files.</h2>
+  <div class="files">
+    <div class="fileref"><code>bawthub/main_websocket.py</code><div class="desc"><b>FastAPI app.</b> ~1,500 lines. Lifespan hook initializes the TTS registry; CORS + health endpoints; <code>/v1/ws</code> WebSocket route; TTS admin endpoints; Home Assistant weather pass-through.</div></div>
+    <div class="fileref"><code>bawthub/handler.py</code><div class="desc"><b>The voice state machine.</b> 885 lines. <code>BawtHubHandler</code>, Quest-managed STT/TTS/LLM, interrupt logic, pause detection, the prebuffer fix, the OpenAI Realtime event emission.</div></div>
+    <div class="fileref"><code>bawthub/stt/speech_to_text.py</code><div class="desc"><b>Moshi STT client.</b> 217 lines. msgpack protocol, websocket lifecycle, EMA pause prediction, retry on capacity errors.</div></div>
+    <div class="fileref"><code>bawthub/tts/registry.py</code><div class="desc"><b>The provider dispatcher.</b> Voice-driven routing, lazy probing, TTL-cached health checks, in-flight probe coalescing.</div></div>
+    <div class="fileref"><code>bawthub/tts/base_provider.py</code><div class="desc"><b>The provider contract.</b> <code>TTSAudioChunk</code> + <code>TTSWordTiming</code> message types; <code>prepare_text_for_tts</code> for normalization; <code>VoiceInfo</code> for catalog entries.</div></div>
+    <div class="fileref"><code>bawthub/tts/moshi_provider.py</code><div class="desc"><b>Moshi TTS over msgpack.</b> Wraps the Kyutai websocket protocol behind the provider-agnostic interface. Realtime queue for chunk pacing.</div></div>
+    <div class="fileref"><code>bawthub/tts/azure_provider.py</code> · <code>bawthub/tts/grok_provider.py</code><div class="desc"><b>Cloud TTS providers.</b> Each one self-discovers from env vars; only registers when credentials are present.</div></div>
+    <div class="fileref"><code>bawthub/tts/kokoro_adapter_server.py</code><div class="desc"><b>Kokoro shim.</b> An adapter that exposes Kokoro behind a Moshi-compatible WebSocket — opted in via the <code>docker-compose.kokoro.yml</code> overlay.</div></div>
+    <div class="fileref"><code>bawthub/quest_manager.py</code><div class="desc"><b>The supervisor.</b> Quest = (name, init, run, close). Concurrent workers, cancellation safety, await-once semantics.</div></div>
+    <div class="fileref"><code>bawthub/openai_realtime_api_events.py</code><div class="desc"><b>Wire protocol module.</b> Pydantic discriminated unions for every ClientEvent / ServerEvent that crosses the WebSocket.</div></div>
+    <div class="fileref"><code>bawthub/llm/llm_utils.py</code><div class="desc"><b>The llm-bawt client.</b> <code>StatelessLLMStream</code> wraps an OpenAI-compat client; <code>rechunk_to_words</code> turns chunked tokens into a word-aligned stream.</div></div>
+    <div class="fileref"><code>services/moshi-server/configs/stt.toml</code> · <code>tts.toml</code><div class="desc"><b>Moshi model configs.</b> Hugging Face URIs for weights, transformer dimensions, ASR delay, default voice, padding bonus.</div></div>
+    <div class="fileref"><code>voices.yaml</code><div class="desc"><b>Moshi voice catalog.</b> ~18 voices from VCTK and Expresso datasets. Restart the backend after edits.</div></div>
+  </div>
+
+  <div class="prevnext">
+    <a class="prev" href="/architecture/bawthub/frontend.html"><span class="lbl">Previous</span><span class="t">Frontend</span></a>
+    <a class="next" href="/architecture/bawthub/avatar.html"><span class="lbl">Next</span><span class="t">Avatar</span></a>
+  </div>
+
+  <div class="pagefoot">
+    <span>Validated against <code>main</code> on <b>2026-05-13</b></span>
+    <span>Source: <a href="https://github.com/zenoran/bawthub">bawthub repo</a> (private)</span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>

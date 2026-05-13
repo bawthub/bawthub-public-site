@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Avatar · BawtHub · Architecture</title>
+<meta name="description" content="The 3D avatar — VRM, GLB, and FBX in a unified three.js scene with audio-amplitude lip sync, Mixamo retargeting, persisted bone maps, and a per-model overrides system that survives schema migrations." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/bawthub" target="_blank" rel="noopener">Source ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> BawtHub · avatar</div>
+    <h1 class="page-title">A face for every <em>bawt</em>.</h1>
+    <p class="lede">The 3D avatar surface is BawtHub's most experimental feature — three model formats, two skeleton conventions, one shared scene, lip sync driven by audio amplitude instead of phonemes, and a bone-retargeting layer so a Mixamo dance clip lands cleanly on a VRM rig from a different vendor. It's labeled "experimental" in the README, but it's been load-bearing in the voice surface for over a year.</p>
+    <div class="meta">
+      <span><b>Renderer:</b> three.js 0.183 · @react-three/fiber 9 · @react-three/drei 10</span>
+      <span><b>VRM:</b> @pixiv/three-vrm 3.5</span>
+      <span><b>Lip sync:</b> AnalyserNode FFT · 60 fps morph drive</span>
+    </div>
+  </div>
+
+  <h2 id="formats"><span class="num">01</span> Three formats, one component.</h2>
+  <p><code>AvatarModel.tsx</code> dispatches to a per-format loader shell based on file extension:</p>
+  <table class="spec">
+    <thead><tr><th>Format</th><th>Loader</th><th>Origin</th><th>Lip-sync path</th></tr></thead>
+    <tbody>
+      <tr><td><code>.vrm</code></td><td><code>GLTFLoader + VRMLoaderPlugin</code></td><td>VRoid, ChatVRM exports, Booth marketplace</td><td>VRM expression <code>Aa</code> if present, morph fallback otherwise</td></tr>
+      <tr><td><code>.glb</code></td><td><code>GLTFLoader</code></td><td>Sketchfab, Mixamo + custom rigs</td><td>Shared morph names across child meshes</td></tr>
+      <tr><td><code>.fbx</code></td><td><code>FBXLoader</code></td><td>Mixamo characters</td><td>Single-mesh morph target</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each shell loads its asset with <code>useLoader</code>, then funnels into three shared hooks: <code>useModelSetup</code> (mesh/morph/material/bone discovery and overrides), <code>useAnimations</code> (FBX clip loading + retarget), and <code>useLipSync</code> (the 60 fps frame loop that drives mouth, blink, breath, and head sway). The three loaders are different by necessity — VRM has a normalized humanoid skeleton, FBX has Mixamo's nonstandard naming, GLB is a wild west — but the hooks all collapse onto the same interface.</p>
+
+  <h2 id="lipsync"><span class="num">02</span> Lip sync: amplitude, not phonemes.</h2>
+  <p>The avatar doesn't try to read phoneme timings out of TTS. Instead, the audio output element is piped through an <code>AnalyserNode</code> (<code>fftSize: 1024</code>, <code>smoothing: 0.72</code>), and every frame <code>useLipSync</code>:</p>
+
+  <ol>
+    <li>Pulls <code>frequencyBinCount</code> bytes via <code>getByteFrequencyData</code></li>
+    <li>Sums energy across roughly the 2%–17% bin range (voice-band, skipping rumble and the high hiss)</li>
+    <li>Takes the RMS, calls anything above 0.02 "speaking"</li>
+    <li>Lerps <code>jawOpen</code> toward <code>amp * 0.8</code> with a smoothing factor of 0.3 per frame</li>
+  </ol>
+
+  <p>That <code>jawOpen</code> value drives whichever mouth-open channel the model exposes — a VRM <code>Aa</code> expression, a morph target keyed by name discovery (mouth-open, jaw-open, <i>aa</i>, <i>a</i>), or a GLB shared-morph that gets written to every child mesh that has the matching name. Blink is procedural too: a sine pulse on <code>(t % 4.3) &lt; 0.14</code> drives <code>VRMExpressionPresetName.Blink</code> or the discovered blink morph.</p>
+
+  <div class="callout spec">
+    <div class="ic">✦</div>
+    <div>
+      <strong>Why not phoneme-driven viseme animation?</strong>
+      <p>Phoneme timing means alignment with whatever TTS engine is in use. Moshi exposes word timings but not phonemes. Azure exposes visemes but only for some voices. Amplitude doesn't care which engine speaks — and the result is visually convincing because human eyes mostly read mouth-open-vs-mouth-shut from across a room, not specific viseme shapes.</p>
+    </div>
+  </div>
+
+  <h2 id="speaking-motion"><span class="num">03</span> Speaking motion on top of everything else.</h2>
+  <p>When the avatar is speaking, the frame loop layers per-bone perturbations on top of any active animation clip:</p>
+  <ul>
+    <li><code>neck.rotation.x += sin(t * 4.2) * amp * 0.025</code> — head nod synchronized to amplitude</li>
+    <li><code>head.rotation.x += sin(t * 5.5) * amp * 0.08 + sin(t * 3.1) * amp * 0.04</code> — head tilt blend</li>
+    <li><code>head.rotation.y += sin(t * 2.3) * amp * 0.03</code> — small yaw drift</li>
+    <li><code>head.rotation.z += sin(t * 4.7) * amp * 0.02</code> — head roll</li>
+  </ul>
+  <p>Idle motion (when no clip is playing and the avatar isn't speaking) adds a breath cycle on the spine and head, plus a slow drift on the neck. All of this composes — a Mixamo "head nod yes" clip plays through the mixer, the speaking perturbations layer on top with <code>premultiply</code>, and the result is animation that doesn't look canned.</p>
+
+  <h2 id="retarget"><span class="num">04</span> Mixamo to VRM: the retargeting problem.</h2>
+  <p>Animations come from Mixamo. Avatars come from VRoid, Booth, Sketchfab, and custom Blender exports. The bones don't match. Mixamo names its bones <code>mixamorig:Head</code>, <code>mixamorig:LeftArm</code>, etc.; VRM normalizes to <code>head</code>, <code>leftUpperArm</code>, etc.; a custom GLB might use anything at all.</p>
+
+  <p><code>retarget.ts</code> handles three problems at once:</p>
+  <ol>
+    <li><b>Name mapping.</b> <code>MIXAMO_TO_VRM_BONE</code> in <code>lib/boneMapping.ts</code> is the canonical map. <code>retargetAnimationClip</code> walks every track in a clip, strips <code>mixamorig:</code>, looks up the target bone name, and drops tracks with no mapping (e.g. <code>HeadTop_End</code>, finger end-bones).</li>
+    <li><b>Rest pose correction.</b> A T-pose source clip applied to an A-pose target wrist will get bent backward. The retargeter captures rest-pose quaternions for both source and target before any animation runs, then composes <code>q_target = sourceRest⁻¹ × q_source × targetRest</code> on each track so the animation deforms <i>from</i> the target's rest pose.</li>
+    <li><b>Axis convention.</b> VRM normalized bones use Z-axis-forward; Mixamo FBX bones use X-axis-forward. The arm-space offset in <code>useLipSync</code> picks the right axis based on <code>modelType</code> and mirrors the right arm against the left.</li>
+  </ol>
+
+  <h2 id="overrides"><span class="num">05</span> Persisted per-model overrides.</h2>
+  <p>Every model can have a stored override blob keyed by model path. The Prisma <code>AvatarSettings</code> table holds:</p>
+
+  <table class="spec">
+    <thead><tr><th>Field</th><th>What it overrides</th></tr></thead>
+    <tbody>
+      <tr><td><code>meshVisibility</code></td><td>Per-mesh on/off — hide a hat, kill an oversized hair fan, disable a particle emitter</td></tr>
+      <tr><td><code>morphOverrides</code></td><td>Per-morph fixed values keyed by <code>meshName::morphName</code> — set a smile to 0.3, keep eyes half-closed, override lip-sync output</td></tr>
+      <tr><td><code>materialOverrides.materialVisibility</code></td><td>Per-material on/off keyed by <code>meshName::materialName</code></td></tr>
+      <tr><td><code>materialOverrides.colorTints</code></td><td>Per-material hex tint overrides</td></tr>
+      <tr><td><code>materialOverrides.shininess</code></td><td>Global shininess for non-PBR materials</td></tr>
+      <tr><td><code>armSpaceOffset</code></td><td>Degrees of arm-down rotation to apply on top of rest pose — fixes T-pose-vs-A-pose mismatches</td></tr>
+      <tr><td><code>sceneSettings</code></td><td>Background, fog, post-processing toggles (free-form JSON)</td></tr>
+    </tbody>
+  </table>
+
+  <p>An override on a morph target wins over lip sync — if you've manually set <code>mouth_open</code> for a particular model (because, say, the auto-discovered morph is the wrong one and lip sync looks weird), <code>useLipSync</code> notices the key is in <code>morphOverrides</code> and skips it. The same applies to materials and meshes.</p>
+
+  <h2 id="bone-mapping"><span class="num">06</span> The bone mapping editor.</h2>
+  <p>Auto-mapping works for most models — <code>autoMapBonesToMap</code> uses name-pattern heuristics to match a model's actual bone names to the Mixamo canonical names. But it sometimes fails — a custom rig that names its head bone <code>BONE_NULL_HEAD</code> isn't going to auto-match.</p>
+
+  <p><code>BoneMappingAdmin</code> is the human escape hatch. It groups bones by body part (Core, Left Arm, Right Arm, Left Leg, Right Leg, Left Hand, Right Hand) and lets you pick from the model's bone list for each canonical Mixamo slot. The result is persisted to the <code>BoneMapping</code> Prisma table and overrides auto-detection on subsequent loads. The page also runs animation triggers — load a clip, see how it lands, tweak the mapping, save.</p>
+
+  <h2 id="cameras"><span class="num">07</span> Cameras and presets.</h2>
+  <p>The viewer auto-computes camera presets from each model's bounding box on load — Full Body, Mid, Close-Up, Face. <code>CameraRig</code> handles smooth transitions between presets with damped position + target interpolation. Camera presets are persisted per-model so the next time you load the same VRM, the camera comes up where you left it. The orbit controls remain available for live exploration.</p>
+
+  <h2 id="animations"><span class="num">08</span> The animation library.</h2>
+  <p>Animation clips are FBX files in <code>/models/animations/</code>:</p>
+
+  <div class="diagram">
+    <div class="diagram-title">Bundled clips · all Mixamo, loaded via FBXLoader, retargeted at runtime</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <span class="pill">Breathing Idle</span>
+      <span class="pill">Acknowledging</span>
+      <span class="pill">Angry Gesture</span>
+      <span class="pill">Annoyed Head Shake</span>
+      <span class="pill">Being Cocky</span>
+      <span class="pill">Dismissing Gesture</span>
+      <span class="pill">Happy Hand Gesture</span>
+      <span class="pill">Hard Head Nod</span>
+      <span class="pill">Head Nod Yes</span>
+      <span class="pill">Lengthy Head Nod</span>
+      <span class="pill">Look Away Gesture</span>
+      <span class="pill">Relieved Sigh</span>
+      <span class="pill">Sarcastic Head Nod</span>
+      <span class="pill">Shaking Head No</span>
+      <span class="pill">Thoughtful Head Shake</span>
+      <span class="pill">Weight Shift</span>
+    </div>
+  </div>
+
+  <p>"Breathing Idle" is the auto-play default. Clips above it are reaction animations — the LLM can name one as part of its response (parsed by the voice pipeline into a <code>BawtHubServiceAnimation</code> event) and <code>useAvatarStore.triggerAnimation</code> queues it. The avatar viewer consumes the pending animation, plays it once, then returns to idle.</p>
+
+  <p>An <code>AnimationTriggersAdmin</code> page lets you wire animation cues to LLM keywords, set fallback animations per emotion class, and preview each clip on the current model with retargeting applied.</p>
+
+  <h2 id="orchestration"><span class="num">09</span> How the avatar finds its audio.</h2>
+  <p>The avatar is a separate R3F canvas, but it doesn't run its own audio context — it borrows the one from <code>BawtHub.tsx</code>. When the voice call's <code>useRealtimeAudioOutput</code> creates the <code>AudioContext</code> + <code>AudioWorkletNode</code> + <code>AnalyserNode</code>, the analyser ref is exposed to the avatar via component props. The avatar's lip sync hook reads from that same analyser — meaning the mouth opens at the same moment the speakers do, with no extra audio routing overhead.</p>
+
+  <p>On the <code>/avatar</code> page (where there's no active voice call), the model still loads and animates — idle motion, breath, blink — but <code>isSpeaking</code> stays false and the analyser is null, so the lip sync hook just runs the procedural-only branch. The mode flips back the instant a voice call starts.</p>
+
+  <h2 id="files"><span class="num">10</span> Key files.</h2>
+  <div class="files">
+    <div class="fileref"><code>frontend/src/app/avatar/AvatarModel.tsx</code><div class="desc"><b>The dispatcher.</b> One component, three loader shells (FBX/GLB/VRM), all funneling into the shared hooks.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/useLipSync.ts</code><div class="desc"><b>The 60 fps frame loop.</b> AnalyserNode read, amplitude smoothing, mouth/blink/head drive, arm-space offset, speaking-motion perturbations on top of clips.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/useModelSetup.ts</code><div class="desc"><b>Discovery and overrides.</b> Walks the loaded scene, collects meshes/morphs/materials/bones, applies persisted overrides, builds bone refs.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/useAnimations.ts</code><div class="desc"><b>FBX clip loader.</b> Lazy-loads Mixamo clips, retargets to the current rig, manages the AnimationMixer + AnimationActions registry, fires <code>onClipComplete</code> when the clip finishes.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/retarget.ts</code><div class="desc"><b>The retargeter.</b> Bone-name remap, rest-pose correction (<code>sourceRest⁻¹ × q × targetRest</code>), track dropping for unmapped end-bones.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/CameraRig.tsx</code> · <code>SceneLighting.tsx</code> · <code>SceneExposer.tsx</code><div class="desc"><b>Scene chrome.</b> Camera transitions, three-point lighting, scene-graph exposure for the admin UIs.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/persistence.ts</code><div class="desc"><b>The override bridge.</b> Load + save per-model settings against <code>/api/avatar/settings</code>.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/utils.ts</code><div class="desc"><b>Mesh/morph/bone discovery.</b> <code>findBone</code>, <code>findMorph</code>, <code>findMorphByKeyword</code>, <code>discoverModel</code> — the heuristics that auto-map mouth and blink targets.</div></div>
+    <div class="fileref"><code>frontend/src/lib/boneMapping.ts</code><div class="desc"><b>The canonical bone map.</b> Mixamo-to-VRM lookup, <code>STANDARD_BONE_GROUPS</code> for the admin UI, <code>autoMapBonesToMap</code> for first-load auto-detection.</div></div>
+    <div class="fileref"><code>frontend/src/app/BoneMappingAdmin.tsx</code> · <code>AnimationTriggersAdmin.tsx</code><div class="desc"><b>The escape hatches.</b> Human-editable mapping when auto-detection fails; LLM-keyword → animation routing.</div></div>
+    <div class="fileref"><code>frontend/src/app/AvatarViewer.tsx</code><div class="desc"><b>The R3F canvas wrapper.</b> Used both at <code>/avatar</code> and as an inline embed in the voice page.</div></div>
+    <div class="fileref"><code>frontend/src/app/avatar/proceduralPose.ts</code> · <code>poseLibrary.ts</code><div class="desc"><b>Procedural idle.</b> Pose blends used when no clip is playing, plus a small library of static poses callable by name.</div></div>
+  </div>
+
+  <div class="prevnext">
+    <a class="prev" href="/architecture/bawthub/voice.html"><span class="lbl">Previous</span><span class="t">Voice</span></a>
+    <a class="next" href="/architecture/bawthub/surfaces.html"><span class="lbl">Next</span><span class="t">Surfaces</span></a>
+  </div>
+
+  <div class="pagefoot">
+    <span>Validated against <code>main</code> on <b>2026-05-13</b></span>
+    <span>Source: <a href="https://github.com/zenoran/bawthub">bawthub repo</a> (private)</span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>

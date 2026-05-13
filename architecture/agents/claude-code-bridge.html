@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Code bridge · agents · BawtHub Architecture</title>
+<meta name="description" content="The Claude Code bridge in llm-bawt: how a Redis command stream, the Claude Agent SDK, and the OpenClawEvent format combine to stream tool calls from Anthropic's SDK into the same chat UI that renders every other backend." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/llm-bawt/tree/main/src/llm_bawt/agent_backends" target="_blank" rel="noopener">Source ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> agents · claude-code bridge</div>
+    <h1 class="page-title">The SDK is a <em>subprocess</em>.</h1>
+    <p class="lede">Anthropic ships a Claude Agent SDK that bundles a Claude Code binary and streams a JSON event stream over stdio. The bridge wraps that stream in the same Redis envelope every other agent backend uses — so a chat in the BawtHub UI doesn't know, and shouldn't care, whether the tools running on the other side are coming from a local <code>llama.cpp</code> tool loop, a WebSocket gateway, or a Claude binary that an SDK spawned five seconds ago.</p>
+    <div class="meta">
+      <span><b>Upstream:</b> <code>claude_agent_sdk.query()</code> + bundled Claude binary</span>
+      <span><b>Auth:</b> OAuth subscription token (Max/Pro), not API key</span>
+      <span><b>Transport:</b> Redis Streams · <code>openclaw:commands</code> + <code>openclaw:run:{id}</code></span>
+    </div>
+  </div>
+
+  <h2 id="why"><span class="num">01</span> Why a bridge, not an import.</h2>
+  <p>The Claude Agent SDK is a Python package, and it would be technically possible to import it inside the main <code>llm-bawt-app</code> FastAPI process. The bridge exists for three reasons, in increasing order of importance:</p>
+
+  <ol>
+    <li><b>Process isolation.</b> The SDK spawns a child Claude binary. If that binary crashes (it has, with <code>exit code: 1</code> on bad OAuth state) it shouldn't take the main API down with it.</li>
+    <li><b>Restart-without-restart.</b> The bridge is its own Docker service. <code>docker compose restart claude-code-bridge</code> recycles the SDK + binary without bouncing the API; the API just sees commands enqueue while the bridge is starting up.</li>
+    <li><b>Uniformity.</b> OpenClaw was the first agent backend, and it lives across a WebSocket on a different host. Claude Code came second. Codex came third. They all speak the same Redis protocol — <code>chat.send</code> in, <code>OpenClawEvent</code> out — because that's the only way the SSE generator on the API side can stay backend-agnostic.</li>
+  </ol>
+
+  <h2 id="topology"><span class="num">02</span> Topology.</h2>
+
+  <div class="diagram">
+    <div class="diagram-title">Claude Code bridge · request flow</div>
+    <pre style="font-family:var(--mono);font-size:11.5px;line-height:1.5;color:var(--muted);margin:0;white-space:pre">
+┌──────────────────────────────────────────────────┐
+│  llm-bawt-app (FastAPI)                          │
+│  ClaudeCodeBackend.stream_raw()                  │
+│  → RedisSubscriber.send_command(backend=         │
+│       "claude-code", session_key="claude:nick",  │
+│       message, system_prompt, model, ...)        │
+└─────────────────────┬────────────────────────────┘
+                      │ XADD openclaw:commands
+                      ▼
+┌──────────────────────────────────────────────────┐
+│  Redis Streams                                   │
+│  openclaw:commands  (consumer group:             │
+│       "claude-code-bridge"; filter backend ==    │
+│       "claude-code", ACK others)                 │
+└─────────────────────┬────────────────────────────┘
+                      │ XREADGROUP
+                      ▼
+┌──────────────────────────────────────────────────┐
+│  claude-code-bridge container                    │
+│   • SessionQueue.lock(session_key)               │
+│   • _get_session(bot) → resume UUID if same model│
+│   • claude_agent_sdk.query(options)              │
+│   • iterate async msg stream:                    │
+│       StreamEvent  →  ASSISTANT_DELTA            │
+│       ToolUseBlock →  TOOL_START                 │
+│       ToolResultBlk → TOOL_END                   │
+│       ResultMessage → ASSISTANT_DONE             │
+└─────────────────────┬────────────────────────────┘
+                      │ XADD openclaw:run:{req_id}
+                      ▼
+                  API subscribes
+                  → SSE to frontend</pre>
+  </div>
+
+  <p>The chat path in <code>OpenClawBackend.stream_raw()</code> (which <code>ClaudeCodeBackend</code> inherits unchanged) creates a per-request UUID, opens a <code>RedisSubscriber.subscribe_run(request_id)</code> async iterator, and yields each event into the SSE generator. The bridge never knows there's a Next.js frontend on the other end — it publishes to a stream, and whoever's subscribed reads.</p>
+
+  <h2 id="session"><span class="num">03</span> Session keys and resume semantics.</h2>
+  <p>The Claude Agent SDK has its own session concept — a UUID it assigns when <code>query()</code> first runs. To resume a conversation across turns the bridge has to pass that UUID back as <code>resume_id</code>. <code>llm-bawt</code> stores it in the bot's <code>agent_backend_config.session_key</code> column.</p>
+
+  <p>But the SDK session UUID is <i>not</i> the routing key. The Redis routing key is built in <code>ClaudeCodeBackend._resolve_session_key()</code>:</p>
+
+  <pre style="font-family:var(--mono);font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:14px 16px;white-space:pre-wrap;margin:14px 0">
+def _resolve_session_key(self, config: dict) -> str:
+    bot_id  = (config.get("bot_id")  or "main").strip()    or "main"
+    user_id = (config.get("user_id") or "default").strip() or "default"
+    return f"{bot_id}:{user_id}"</pre>
+
+  <p>So Nick chatting with the <code>claude</code> bot routes through <code>claude:nick</code>; Megan chatting with the same bot routes through <code>claude:megan</code>. Two independent Claude conversations, same bot persona, same Postgres row. The SDK UUID is stored per <code>(bot, user)</code> pair in a small server-side map keyed by routing key.</p>
+
+  <p>When a new <code>chat.send</code> arrives, the bridge looks up the existing session for that bot via <code>_get_session()</code>. If the model hasn't changed, it passes <code>resume_id</code> to the SDK and Claude continues the prior conversation. If the model <i>has</i> changed (e.g. someone PATCH'd the bot from <code>sonnet</code> to <code>opus[1m]</code>), the bridge clears the session and lets the SDK start fresh — Claude can't resume a Sonnet thread on Opus.</p>
+
+  <p>The user message <code>/new</code> short-circuits the same way: clear session, drop the prefix, run normally. If the message was <i>only</i> <code>/new</code>, the bridge synthesizes a <code>ASSISTANT_DONE</code> with text <q>Session reset. Ready for a new conversation.</q> and never calls the SDK.</p>
+
+  <h2 id="events"><span class="num">04</span> SDK events → OpenClawEvent.</h2>
+  <p>The bridge calls <code>claude_agent_sdk.query(prompt, options=ClaudeAgentOptions(...))</code> and iterates its async message stream. The translation isn't fancy — it's just a long <code>isinstance</code> chain — but the mapping is the load-bearing part of the whole bridge.</p>
+
+  <table class="spec">
+    <thead><tr><th>SDK message</th><th>Block / field</th><th>Emits</th></tr></thead>
+    <tbody>
+      <tr><td><code>StreamEvent</code></td><td><code>content_block_delta</code> · <code>text_delta</code></td><td><code>ASSISTANT_DELTA</code> with <code>text=delta.text</code></td></tr>
+      <tr><td><code>StreamEvent</code></td><td><code>content_block_start</code> · <code>tool_use</code></td><td>(captures tool name; emits TOOL_START on the AssistantMessage)</td></tr>
+      <tr><td><code>AssistantMessage</code></td><td><code>ToolUseBlock</code></td><td><code>TOOL_START</code> · <code>tool_name=block.name</code>, <code>tool_arguments=block.input</code></td></tr>
+      <tr><td><code>UserMessage</code></td><td><code>ToolResultBlock</code></td><td><code>TOOL_END</code> · <code>tool_result</code> truncated to 2000 chars</td></tr>
+      <tr><td><code>ResultMessage</code></td><td>full text + usage</td><td><code>ASSISTANT_DONE</code> · <code>token_usage</code> (input/cache/output, context window, cost)</td></tr>
+      <tr><td>SDK exception</td><td>—</td><td><code>ERROR</code> · run_done</td></tr>
+    </tbody>
+  </table>
+
+  <p>Every event is then wrapped in <code>OpenClawEvent</code> and published via <code>RedisPublisher.publish_event()</code> to <code>openclaw:run:{request_id}</code>. The <code>provider="claude-code"</code> field is stamped at the publisher boundary so the frontend's <code>ClaudeToolCallCard</code> can dispatch on it.</p>
+
+  <h2 id="usage"><span class="num">05</span> Token usage: the cumulative-vs-iteration trap.</h2>
+  <p>One thing the bridge had to get right that the internal docs glossed over: <code>ResultMessage.usage</code> is <b>cumulative across all internal API iterations in the turn</b>. For a tool-heavy turn that re-reads the cached system prompt on every iteration, the summed <code>cache_read_input_tokens</code> can exceed the model's actual context window and produce nonsense over-100% counters in the UI's per-bubble usage pill.</p>
+
+  <p>The fix: the bridge captures <code>AssistantMessage.usage</code> on <i>every</i> assistant message during the turn, keeps only the last one, and uses that "iteration view" for the <code>input_tokens</code> / <code>cache_read_tokens</code> / <code>cache_creation_tokens</code> fields surfaced to the UI. That represents the model's <i>final</i> view of the context — what a human really wants to see as "context fullness." Only <code>output_tokens</code> and <code>total_cost_usd</code> are taken from the cumulative <code>ResultMessage</code>, because those genuinely accumulate.</p>
+
+  <div class="callout warn">
+    <div class="ic">⚠</div>
+    <div>
+      <strong>The internal doc was stale on this.</strong>
+      <p><code>CLAUDE_CODE_BRIDGE.md</code> documents the bridge but doesn't mention the per-iteration usage handling — that was added later when the >100% context bar showed up in production. The bridge's docstring at <code>bridge.py:752–810</code> is the current source of truth.</p>
+    </div>
+  </div>
+
+  <h2 id="oauth"><span class="num">06</span> OAuth, not API key.</h2>
+  <p>The bridge authenticates through a Claude subscription (Max/Pro), not metered API billing. The OAuth bundle lives at <code>~/.claude/.credentials.json</code> on the host and is bind-mounted into the container at <code>/home/bridge/.claude/.credentials.json</code>. The bundle has the shape:</p>
+
+  <pre style="font-family:var(--mono);font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:14px 16px;white-space:pre-wrap;margin:14px 0">
+{
+  "claudeAiOauth": {
+    "accessToken": "sk-ant-oat01-...",
+    "refreshToken": "...",
+    "expiresAt": 1762531200000,
+    "scopes": ["user:inference", "user:profile"]
+  }
+}</pre>
+
+  <p>The bridge's <code>_get_fresh_oauth_token()</code> reads this on each call, checks if <code>expiresAt</code> is within 5 minutes of now, and if so POSTs to <code>https://platform.claude.com/v1/oauth/token</code> with <code>grant_type=refresh_token</code> to mint a fresh access token. The refreshed bundle gets written back to the same file — which means a <code>claude setup-token</code> on the host self-heals the bridge on the next turn, no <code>docker restart</code> required.</p>
+
+  <p><code>CLAUDE_CODE_OAUTH_TOKEN</code> env var is the fallback path, used only when the credentials file is unreadable. In normal operation the file is canonical.</p>
+
+  <h2 id="permissions"><span class="num">07</span> Permission mode and the non-root container.</h2>
+  <p>The bridge runs as a non-root user named <code>bridge</code> with <code>permission_mode="bypassPermissions"</code>. That mode is the Claude CLI's flag that disables every "should I run this tool?" prompt — which is the only behavior that makes sense for an unattended service. <b>Bypass mode also refuses to run as root</b>, which is why the Dockerfile creates the <code>bridge</code> user. Trying to <code>USER 0</code> the container will hard-fail at SDK startup.</p>
+
+  <p>Mounts are deliberate. The bridge sees:</p>
+
+  <table class="spec">
+    <thead><tr><th>Host</th><th>Container</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><code>~/dev</code></td><td><code>/home/bridge/dev</code></td><td>Repos. Claude can <code>Read</code>, <code>Edit</code>, <code>Bash</code> across the user's whole dev tree.</td></tr>
+      <tr><td><code>~/.config/claude-code-bridge</code></td><td><code>/home/bridge/.claude</code></td><td>Settings, MCP config, <code>CLAUDE.md</code>, credentials.</td></tr>
+      <tr><td><code>~/dev/agent-skills</code></td><td><code>/home/bridge/.claude/skills</code></td><td>Shared skills repo, directly mounted into Claude's expected path.</td></tr>
+      <tr><td><code>~/.ssh</code></td><td><code>/home/bridge/.ssh</code> (ro)</td><td>SSH keys for git pulls and remote host access.</td></tr>
+    </tbody>
+  </table>
+
+  <p>The skill mount means editing a skill on the host at <code>~/dev/agent-skills/&lt;skill&gt;/SKILL.md</code> is visible to Claude on the next turn. No symlinks, no rebuilds.</p>
+
+  <h2 id="mcp-injection"><span class="num">08</span> MCP server bootstrap.</h2>
+  <p>The bridge loads MCP server definitions from <code>~/.claude/settings.json</code> at startup and passes them to the SDK as <code>ClaudeAgentOptions(mcp_servers=...)</code>. The same <code>llm-bawt-memory</code> MCP server that powers memory tools also exposes the task tools — so when Caid is running through this bridge, he can call <code>tasks_update</code> and <code>memory_search</code> from inside the SDK loop.</p>
+
+  <p>One small piece of magic: the bridge appends a system-prompt suffix per call:</p>
+
+  <pre style="font-family:var(--mono);font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:14px 16px;white-space:pre-wrap;margin:14px 0">
+## MCP Tool Context
+Your bot_id is "caid". When using llm-bawt-memory MCP tools:
+- Memory/message tools: always pass bot_id="caid"
+- Profile tool with entity_type="user": use entity_id="nick"
+- Profile tool with entity_type="bot": use entity_id="caid" (yourself)</pre>
+
+  <p>This injection means the agent never has to remember its own slug — the bridge slips that context in before every turn.</p>
+
+  <h2 id="trigger-id"><span class="num">09</span> Stamping the originating message.</h2>
+  <p>Every <code>chat.send</code> the API sends carries a <code>trigger_message_id</code> — the UUID of the user's chat bubble that kicked off this turn. The bridge stashes it in <code>self._trigger_message_ids[request_id]</code> when the send starts, and <code>_publish_event()</code> reads it back so every emitted <code>OpenClawEvent</code> for that request carries the same <code>trigger_message_id</code>. The frontend then buckets tool activity under the originating user bubble without ever having to guess from <code>turn_id</code> heuristics.</p>
+
+  <h2 id="ux"><span class="num">10</span> What it looks like in the UI.</h2>
+
+  <div class="shot">
+    <img src="/images/turn-logs.jpg" alt="Turn logs viewer showing 125 turns and 81 turns with tools captured by the claude code bridge" />
+    <div class="caption"><b>/tools/turn-logs</b> — Caid's turn logs. The bridge captures every event it emits; the UI lets you replay a turn's full tool sequence. 125 turns, 81 with tools — most claude-code turns are dense.</div>
+  </div>
+
+  <h2 id="files"><span class="num">11</span> Key files.</h2>
+  <div class="files">
+    <div class="fileref"><code>src/claude_code_bridge/bridge.py</code><div class="desc"><b>The bridge.</b> ~1,100 lines. Redis command listener, SDK options builder, event translator, OAuth refresh, session resume, MCP bootstrap, path shortening for log readability.</div></div>
+    <div class="fileref"><code>src/claude_code_bridge/__main__.py</code><div class="desc"><b>Entrypoint.</b> Health-check server on port 8681, signal handling, supervised loop.</div></div>
+    <div class="fileref"><code>src/llm_bawt/agent_backends/claude_code.py</code><div class="desc"><b>The backend.</b> 38 lines. Inherits the entire Redis protocol from <code>OpenClawBackend</code>; only overrides <code>name = "claude-code"</code> and <code>_resolve_session_key()</code> to route per (bot, user).</div></div>
+    <div class="fileref"><code>src/llm_bawt/agent_backends/openclaw.py</code><div class="desc"><b>The shared protocol.</b> <code>OpenClawBackend.stream_raw()</code> — the actual implementation that all three bridges inherit. Sends the command, subscribes to the run stream, translates events back to deltas and tool dicts for the SSE generator.</div></div>
+    <div class="fileref"><code>src/openclaw_bridge/events.py</code><div class="desc"><b>The event format.</b> <code>OpenClawEvent</code> dataclass with <code>OpenClawEventKind</code> enum: <code>ASSISTANT_DELTA</code>, <code>ASSISTANT_DONE</code>, <code>TOOL_START</code>, <code>TOOL_END</code>, <code>USER_MESSAGE</code>, <code>RUN_STARTED</code>, <code>RUN_COMPLETED</code>, <code>SYSTEM_NOTE</code>, <code>ERROR</code>.</div></div>
+    <div class="fileref"><code>src/openclaw_bridge/publisher.py</code><div class="desc"><b>Redis publisher.</b> Stream names: <code>openclaw:commands</code>, <code>openclaw:run:{id}</code>, <code>openclaw:events:{session}</code>. Stamps <code>provider</code> at publish time so call sites don't have to.</div></div>
+    <div class="fileref"><code>Dockerfile.bridge</code><div class="desc"><b>Shared image.</b> Lightweight <code>python:3.12-slim</code>, used by both <code>claude-code-bridge</code> and <code>openclaw-bridge</code>. Non-root <code>bridge</code> user.</div></div>
+  </div>
+
+  <div class="prevnext">
+    <a class="prev" href="/architecture/agents/task-system.html"><span class="lbl">Previous</span><span class="t">Task system</span></a>
+    <a class="next" href="/architecture/agents/codex-bridge.html"><span class="lbl">Next</span><span class="t">Codex bridge</span></a>
+  </div>
+
+  <div class="pagefoot">
+    <span>Validated against <code>main</code> on <b>2026-05-13</b></span>
+    <span>Source: <a href="https://github.com/zenoran/llm-bawt/tree/main/src/llm_bawt/agent_backends">llm-bawt agent backends</a></span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>

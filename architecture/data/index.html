@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Data + Schema · BawtHub Architecture</title>
+<meta name="description" content="Where everything is stored. Two services, two ORMs, one Postgres cluster on Unraid. Per-bot memory tables in llm-bawt, Prisma-managed presentation tables in BawtHub, the OpenClaw event log, turn logs, and the activity feed." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/llm-bawt/tree/main/src/llm_bawt/memory" target="_blank" rel="noopener">Source ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> cross-cutting · data + schema</div>
+    <h1 class="page-title">One Postgres. Two <em>schemas</em>.</h1>
+    <p class="lede">BawtHub and llm-bawt share a database — TimescaleDB-flavored Postgres 16 with pgvector — but they don't share tables. llm-bawt owns the memory, sessions, profiles, turn logs, and the OpenClaw event archive. BawtHub owns its presentation tables: avatar settings, the Unraid container catalog, the agent task system, and notifications. Two ORMs, one connection string, zero foreign keys across the boundary.</p>
+    <div class="meta">
+      <span><b>DB engine:</b> <code>timescale/timescaledb-ha:pg16</code></span>
+      <span><b>llm-bawt ORM:</b> SQLAlchemy + SQLModel</span>
+      <span><b>BawtHub ORM:</b> Prisma (TypeScript)</span>
+      <span><b>Vector index:</b> pgvector HNSW, 384d</span>
+    </div>
+  </div>
+
+  <h2 id="topology"><span class="num">01</span> Where the database lives.</h2>
+  <p>The Postgres container is <code>postgres-pgvector</code> on Unraid, network <code>br0.2</code>, image <code>timescale/timescaledb-ha:pg16</code>. The choice of the TimescaleDB image isn't really about time series — it's that the HA image ships with pgvector and a fat catalog of useful extensions preinstalled. Nothing in BawtHub depends on hypertables today.</p>
+  <p>Both <code>llm-bawt-app</code> on echo (10.0.0.101) and <code>bawthub-frontend</code> (also on echo) reach Postgres over the LAN. Connection strings are configured via <code>LLM_BAWT_POSTGRES_*</code> environment variables for llm-bawt and a single <code>DATABASE_URL</code> for the Prisma client in the BawtHub frontend container.</p>
+
+  <h2 id="layout"><span class="num">02</span> Schema layout.</h2>
+  <p>Despite living in the same database, the two services' tables don't overlap and there are no cross-schema joins. Each side treats the other's data as opaque — when BawtHub needs message history it calls llm-bawt's REST API; when llm-bawt needs avatar metadata it doesn't, because it isn't llm-bawt's concern.</p>
+
+  <div class="diagram">
+    <div class="diagram-title">Tables grouped by owning service</div>
+
+    <div style="display:grid;gap:10px">
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(139,92,246,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#d9c8ff;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 10px #8b5cf6"></span>Memory</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill violet"><code style="font-size:11px;color:#d9c8ff;background:none;border:none;padding:0">{bot}_messages</code></span><span class="pill violet"><code style="font-size:11px;color:#d9c8ff;background:none;border:none;padding:0">{bot}_memories</code></span><span class="pill violet"><code style="font-size:11px;color:#d9c8ff;background:none;border:none;padding:0">{bot}_forgotten_messages</code></span><span class="pill violet"><code style="font-size:11px;color:#d9c8ff;background:none;border:none;padding:0">sessions</code></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,99,216,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#ffd3f7;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ff63d8;box-shadow:0 0 10px #ff63d8"></span>Identity</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill pink"><code style="font-size:11px;color:#ffd3f7;background:none;border:none;padding:0">entity_profiles</code></span><span class="pill pink"><code style="font-size:11px;color:#ffd3f7;background:none;border:none;padding:0">entity_profile_attributes</code></span><span class="pill pink"><code style="font-size:11px;color:#ffd3f7;background:none;border:none;padding:0">bot_profiles</code></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,209,255,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#bcefff;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#4fd1ff;box-shadow:0 0 10px #4fd1ff"></span>Runtime</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill cyan"><code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">turn_logs</code></span><span class="pill cyan"><code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">tool_call_records</code></span><span class="pill cyan"><code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">scheduled_jobs</code></span><span class="pill cyan"><code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">job_runs</code></span><span class="pill cyan"><code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">runtime_settings</code></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,255,209,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c4fff0;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#4fffd1;box-shadow:0 0 10px #4fffd1"></span>OpenClaw</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">openclaw_events</code></span><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">openclaw_session_state</code></span><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">openclaw_runs</code></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,210,79,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff0bf;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ffd24f;box-shadow:0 0 10px #ffd24f"></span>Prompts</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill gold"><code style="font-size:11px;color:#fff0bf;background:none;border:none;padding:0">prompt_templates</code></span><span class="pill gold"><code style="font-size:11px;color:#fff0bf;background:none;border:none;padding:0">prompt_template_versions</code></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(101,232,155,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a8f1c5;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#65e89b;box-shadow:0 0 10px #65e89b"></span>BawtHub</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill green"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">AgentProject</code></span><span class="pill green"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">AgentTask</code></span><span class="pill green"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">AgentStep</code></span><span class="pill green"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">AgentActivity</code></span><span class="pill green"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">UnraidContainer</code></span><span class="pill green"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">AvatarSettings</code></span><span class="pill green"><code style="font-size:11px;color:#a8f1c5;background:none;border:none;padding:0">+more</code></span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="memory"><span class="num">03</span> Memory (per bot, plus shared sessions).</h2>
+  <p>The five-layer memory model is covered in its own page; this is the disk-level view. Per bot, llm-bawt creates three tables — <code>{bot}_messages</code>, <code>{bot}_memories</code>, <code>{bot}_forgotten_messages</code> — by sanitizing the slug into a table name and running <code>CREATE TABLE IF NOT EXISTS</code> on first access. The memories table has a 384-dim pgvector <code>embedding</code> column added via raw SQL because SQLAlchemy doesn't ship a native pgvector type.</p>
+
+  <table class="spec">
+    <thead><tr><th>Table</th><th>Per-bot?</th><th>Notable columns</th><th>Indexes</th></tr></thead>
+    <tbody>
+      <tr><td><code>{bot}_messages</code></td><td>Yes</td><td><code>id</code> (UUID), <code>role</code>, <code>content</code>, <code>timestamp</code>, <code>session_id</code>, <code>processed</code>, <code>summarized</code>, <code>recalled_history</code></td><td>FTS on <code>content</code></td></tr>
+      <tr><td><code>{bot}_memories</code></td><td>Yes</td><td><code>id</code>, <code>content</code>, <code>tags JSONB</code>, <code>importance</code>, <code>source_message_ids</code>, <code>access_count</code>, <code>intent</code>, <code>stakes</code>, <code>emotional_charge</code>, <code>recurrence_keywords</code>, <code>embedding vector(384)</code></td><td>HNSW on <code>embedding</code></td></tr>
+      <tr><td><code>{bot}_forgotten_messages</code></td><td>Yes</td><td>Soft-deleted rows from messages, with <code>forgotten_at</code></td><td>—</td></tr>
+      <tr><td><code>sessions</code></td><td>Shared (column <code>bot_id</code>)</td><td><code>id</code>, <code>bot_id</code>, <code>started_at</code>, <code>ended_at</code>, <code>status</code>, <code>session_metadata JSONB</code></td><td><code>(bot_id, started_at)</code>, <code>(status)</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The per-bot pattern means table count grows linearly with bot count. That's deliberate — it keeps each bot's vector index small and makes "drop this bot" an actual <code>DROP TABLE</code>, not a tombstone migration. The downside is cross-bot search has to fan out, which the <code>memory_search_all</code> MCP tool handles.</p>
+
+  <h2 id="profiles"><span class="num">04</span> Identity tables (shared).</h2>
+  <p>Unlike memory, identity is shared across bots. A fact about Nick shouldn't have to be relearned by Snark, Mira, and Codex independently.</p>
+
+  <table class="spec">
+    <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>entity_profiles</code></td><td>One row per entity (a <em>user</em> or a <em>bot</em>). Keyed by <code>(entity_type, entity_id)</code>. Holds entity-level metadata.</td></tr>
+      <tr><td><code>entity_profile_attributes</code></td><td>Typed key/value attributes about each entity. Each row carries <code>confidence</code>, <code>source_message_id</code>, <code>extracted_at</code>. Bot attributes capture emergent personality drift; user attributes capture facts about humans.</td></tr>
+      <tr><td><code>bot_profiles</code></td><td>The persisted bot configuration — slug, name, color, system prompt, <code>agent_backend</code>, <code>agent_backend_config JSONB</code> (which holds session keys, model choices, timeouts), feature flags like <code>uses_tools</code>, <code>include_summaries</code>, <code>voice_optimized</code>, <code>tts_mode</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <p>The <code>agent_backend_config.session_key</code> field is where bridges write the SDK-internal thread/session UUID — for Claude Code it's the Agent SDK session, for Codex it's the thread_id. When you send <code>/new</code> as your first word, the chat-routes handler clears this field, and the next turn starts a fresh upstream conversation.</p>
+
+  <h2 id="runtime"><span class="num">05</span> Runtime + turn logs.</h2>
+  <p>Every chat completion gets a row in <code>turn_logs</code>, persisted at request-start with <code>status="streaming"</code> so even a backend crash leaves a trace. The row gets backfilled with prepared messages, tool call details, response text, latency, and final status as the turn progresses.</p>
+
+  <table class="spec">
+    <thead><tr><th>Table</th><th>What it stores</th></tr></thead>
+    <tbody>
+      <tr><td><code>turn_logs</code></td><td>One row per chat completion. Holds <code>user_prompt</code>, <code>response_text</code>, <code>tool_calls_json</code>, <code>error_text</code>, <code>latency_ms</code>, <code>token_usage_json</code>, <code>trigger_message_id</code> (frontend UUID), <code>agent_session_key</code>, <code>agent_request_id</code>, <code>animation</code> (for avatar dispatch).</td></tr>
+      <tr><td><code>tool_call_records</code></td><td>Incrementally appended during a turn — one row per tool invocation. <code>turn_id</code>, <code>tool_name</code>, <code>arguments_json</code>, <code>result_text</code>, <code>iteration</code>, <code>started_at</code>/<code>ended_at</code>, <code>duration_ms</code>. Survives the turn-log <code>tool_calls_json</code> being out of date because that field is only written at finalization.</td></tr>
+      <tr><td><code>scheduled_jobs</code> / <code>job_runs</code></td><td>Cron-style automation: per-bot scheduled prompts (e.g. nightly summarization), with one <code>job_runs</code> row per execution recording status and output.</td></tr>
+      <tr><td><code>runtime_settings</code></td><td>Hot-reloadable configuration values. Edited via the BawtHub <code>/tools/settings</code> page; consumed by llm-bawt on the next request without restart.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Turn logs have a TTL — default 168 hours — and a periodic cleanup job. Tool call records persist alongside their parent turn. The <code>trigger_message_id</code> column on <code>turn_logs</code> is what lets the frontend tie a turn log back to the user message that started it; the column was backfilled retroactively when the field was added.</p>
+
+  <h2 id="openclaw"><span class="num">06</span> The OpenClaw event archive.</h2>
+  <p>Streaming events live in Redis (see the <a href="/architecture/streaming/">streaming</a> page) — but every event is also persisted to Postgres for replay and durability:</p>
+
+  <table class="spec">
+    <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>openclaw_events</code></td><td>Every <code>OpenClawEvent</code> the bridges have published, deduped by <code>event_dedupe_key</code> (SHA-256 of session/kind/payload/seq). Indexed on <code>(session_key, created_at)</code>, <code>(session_key, run_id)</code>, <code>(session_key, seq)</code>. <code>payload_json JSONB</code> holds the full raw event.</td></tr>
+      <tr><td><code>openclaw_session_state</code></td><td>Per-session cursor (<code>last_event_id</code>) for replay-gap detection. Tracks <code>ws_connected</code> and an opaque <code>last_cursor</code> for the upstream gateway.</td></tr>
+      <tr><td><code>openclaw_runs</code></td><td>One row per agent run with assembled <code>full_text</code>, <code>tool_calls_json</code>, status, and started/completed timestamps. This is the closest thing to a "chat transcript" the OpenClaw stack maintains.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout spec">
+    <div class="ic">✦</div>
+    <div>
+      <strong>Why archive every event when they're also in Redis?</strong>
+      <p>Redis Streams have a <code>maxlen</code> cap of 10,000 entries per session. That's enough for live consumption but it'll wrap during a long-running gateway session. The Postgres archive lets the OpenClaw dashboard at <code>/tools/openclaw</code> replay history beyond the Redis window, supports the "resume from event id" semantics when a subscriber attaches, and gives the bridge a place to assemble <code>full_text</code> from delta events without needing to keep them in memory.</p>
+    </div>
+  </div>
+
+  <h2 id="prompts"><span class="num">07</span> The prompt registry.</h2>
+  <p>System prompts and reusable prompt templates are versioned. <code>prompt_templates</code> holds the named template (e.g. "memory_consolidation", "fact_extraction"); <code>prompt_template_versions</code> stores every edit with the body and a timestamp. The <code>/tools/prompts</code> page in BawtHub is the editing UI.</p>
+  <p>This isn't speculative — most of the memory pipeline (consolidation, fact extraction, profile resolution) is driven by templated prompts the operator can iterate on without redeploying code. The active version is the latest version unless one is explicitly pinned.</p>
+
+  <h2 id="bawthub-prisma"><span class="num">08</span> BawtHub: presentation tables (Prisma).</h2>
+  <p>The BawtHub frontend owns its own schema at <code>frontend/prisma/schema.prisma</code>. These tables back the UI's non-chat surfaces — dashboards, avatar config, the agent task system.</p>
+
+  <table class="spec">
+    <thead><tr><th>Model</th><th>What it stores</th></tr></thead>
+    <tbody>
+      <tr><td><code>UnraidContainer</code> / <code>UnraidContainerGroup</code></td><td>Mirrored snapshot of Docker containers on the Unraid host. <code>ports JSONB</code>, <code>lanIpPorts JSONB</code>, <code>customUrl</code>, <code>iconUrl</code>, <code>autoStart</code>, <code>visible</code>, <code>sortOrder</code>. Synced periodically from the Unraid API.</td></tr>
+      <tr><td><code>AgentProject</code></td><td>A bucket of related tasks. <code>contextPrompt</code>, <code>color</code>, <code>icon</code>, <code>agentBotId</code> (which bot handles its tasks).</td></tr>
+      <tr><td><code>AgentTask</code></td><td>One unit of work. Statuses: <code>QUEUED</code> → <code>PLANNING</code> → <code>REFINED</code> → <code>IN_PROGRESS</code> → <code>REVIEW</code> → <code>COMPLETED</code>/<code>FAILED</code>/<code>CANCELLED</code>. Self-references via <code>TaskDependencies</code> for DAGs.</td></tr>
+      <tr><td><code>AgentStep</code></td><td>Sub-step of a task. Types: <code>PLAN</code>, <code>READ_FILE</code>, <code>EDIT_FILE</code>, <code>RUN_COMMAND</code>, <code>SEARCH</code>, <code>ASK_USER</code>, <code>REVIEW</code>, etc. Ordered by <code>orderIndex</code>.</td></tr>
+      <tr><td><code>AgentActivity</code></td><td>Activity feed across tasks/projects. Polymorphic (<code>actorType</code>: user/agent/system) with a <code>meta JSONB</code> bag. Indexed on every dimension.</td></tr>
+      <tr><td><code>Upload</code></td><td>SHA-256-addressed uploaded files. Bound to a task or a project (or both).</td></tr>
+      <tr><td><code>AvatarSettings</code> / <code>AvatarSettingsPreset</code> / <code>BoneMapping</code></td><td>Per-VRM-model rig config — mesh visibility toggles, morph overrides, material overrides, bone-name mappings between mixamo and the target rig. Editable via <code>/tools/avatar</code>.</td></tr>
+      <tr><td><code>AvatarAnimation</code></td><td>The catalog of animations the LLM can pick from for a TTS response. The FBX clips themselves live on disk; this is the semantic catalog with descriptions and enabled flags.</td></tr>
+      <tr><td><code>BotReplyNotification</code></td><td>One row per agent reply. Drives the bell-icon notification dropdown. Indexed on <code>(entityId, createdAt desc)</code> and <code>(entityId, readAt)</code>.</td></tr>
+      <tr><td><code>BotColorMapping</code></td><td>Maps a bot's display name to its accent color — used everywhere a bot bubble or pill renders in the UI.</td></tr>
+      <tr><td><code>UserPreference</code></td><td>Per-entity opaque key/value store for user-set frontend preferences (theme, layout, hidden bots, etc.).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="dual-orm"><span class="num">09</span> Two ORMs, no foreign keys across the boundary.</h2>
+  <p>The boundary is intentional. Prisma manages its own migrations via <code>prisma migrate</code>; llm-bawt manages its own DDL via SQLAlchemy <code>create_all</code> plus targeted <code>ALTER TABLE IF NOT EXISTS</code> statements for schema additions. Neither side knows about the other's tables — when the frontend wants chat history it goes through llm-bawt's REST surface at <code>/v1/history</code>, not a direct join.</p>
+  <p>This buys two things: clean ownership of migrations (no need to coordinate Prisma migrations with Python ones), and the freedom to host the two services against different databases later if it ever makes sense. Today they share one Postgres instance because that's the simplest thing that works.</p>
+
+  <div class="callout warn">
+    <div class="ic">⚠</div>
+    <div>
+      <strong>The one shared concept: <code>bot_id</code>.</strong>
+      <p>Both schemas use <code>bot_id</code> as a soft join key. BawtHub's <code>BotReplyNotification.botId</code>, <code>AgentProject.agentBotId</code>, and <code>BotColorMapping.richName</code> all reference bots that llm-bawt owns. There's no FK constraint — if a bot is renamed or deleted in llm-bawt's <code>bot_profiles</code>, BawtHub rows can dangle. In practice bots are stable enough that this hasn't been an operational issue.</p>
+    </div>
+  </div>
+
+  <h2 id="redis"><span class="num">10</span> Redis is the other data store.</h2>
+  <p>Not everything is in Postgres. The Redis container (<code>llm-bawt-redis</code>, <code>redis:7-alpine</code>) is configured with <code>--maxmemory 128mb --maxmemory-policy allkeys-lru</code> — a transient bus, not a database. It holds:</p>
+
+  <ul>
+    <li><b>Streams</b> for events, commands, and run responses — capped at <code>maxlen ~10,000</code> per session (per-session events), <code>5,000</code> per request (run streams), or <code>5,000</code> for unified bot+user event streams.</li>
+    <li><b>Short-lived RPC reply streams</b> with 60-second TTLs for cross-process function calls.</li>
+    <li><b>History-persist commands</b> (<code>openclaw:history</code>, maxlen 1,000) that the main app consumes to keep bot chat histories in sync with the gateway.</li>
+  </ul>
+
+  <p>Nothing in Redis is durable past restart. Postgres is the source of truth; Redis is just the fast path between processes.</p>
+
+  <h2 id="backups"><span class="num">11</span> Backups.</h2>
+  <p>The Postgres cluster is dumped nightly to NAS storage as part of the broader Unraid backup routine. Memory tables are large (<code>snark_messages</code> alone is ~2,500 rows of conversation history at the time of writing); the dump runs against the live database with <code>pg_dump --clean --if-exists</code>. There's no streaming replication today — single-node Postgres on Unraid, point-in-time recovery via dpkg-backed restore, daily granularity.</p>
+  <p>The <code>infra-backups</code> agent skill covers the monitoring side; verification of dump freshness is a separate routine on the host.</p>
+
+  <h2 id="files"><span class="num">12</span> Key files.</h2>
+  <div class="files">
+    <div class="fileref"><code>src/llm_bawt/memory/postgresql.py</code><div class="desc"><b>The memory backend.</b> ~1,900 lines. Defines <code>get_memory_table_pg(bot_id)</code>, <code>get_message_table_pg(bot_id)</code>, the shared <code>sessions_table</code>, and the <code>PostgreSQLMemoryBackend</code> class that orchestrates them.</div></div>
+    <div class="fileref"><code>src/llm_bawt/profiles.py</code><div class="desc"><b>Profile attributes.</b> <code>ProfileAttribute</code>, <code>EntityProfile</code>, the <code>EntityType</code> enum. <code>entity_profile_attributes</code> is the shared K/V store.</div></div>
+    <div class="fileref"><code>src/llm_bawt/service/turn_logs.py</code><div class="desc"><b>Turn logs + tool call records.</b> The <code>TurnLog</code> SQLModel, <code>ToolCallRecord</code>, <code>TurnLogStore</code> with TTL-based cleanup.</div></div>
+    <div class="fileref"><code>src/llm_bawt/service/scheduler.py</code><div class="desc"><b>Scheduled jobs.</b> Cron-style automation tables — <code>scheduled_jobs</code> and <code>job_runs</code>.</div></div>
+    <div class="fileref"><code>src/llm_bawt/runtime_settings.py</code><div class="desc"><b>Runtime settings + bot profiles.</b> <code>runtime_settings</code> for hot-reload values; <code>bot_profiles</code> for the bot catalog with <code>agent_backend_config</code>.</div></div>
+    <div class="fileref"><code>src/llm_bawt/prompt_registry.py</code><div class="desc"><b>Versioned prompt templates.</b> Backs the <code>/tools/prompts</code> editor; every save is a new version row.</div></div>
+    <div class="fileref"><code>src/openclaw_bridge/store.py</code><div class="desc"><b>OpenClaw event archive.</b> Creates <code>openclaw_events</code>, <code>openclaw_session_state</code>, <code>openclaw_runs</code>; assembles run text from delta events.</div></div>
+    <div class="fileref"><code>bawthub/frontend/prisma/schema.prisma</code><div class="desc"><b>BawtHub schema.</b> ~270 lines of Prisma DSL covering avatars, the agent task system, container catalog, notifications, and user preferences.</div></div>
+  </div>
+
+  <div class="prevnext">
+    <a class="prev" href="/architecture/streaming/"><span class="lbl">Previous</span><span class="t">Streaming</span></a>
+    <a class="next" href="/architecture/deployment/"><span class="lbl">Next</span><span class="t">Deployment topology</span></a>
+  </div>
+
+  <div class="pagefoot">
+    <span>Validated against <code>main</code> on <b>2026-05-13</b></span>
+    <span>Source: <a href="https://github.com/zenoran/llm-bawt">llm-bawt</a> + <a href="https://github.com/zenoran/bawthub">bawthub</a></span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>
