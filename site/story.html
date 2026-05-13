@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BawtHub · Story</title>
+<meta name="description" content="The full story behind BawtHub — how a CLI for chatting with LLMs grew into a multi-bot platform with persistent personas, voice, memory, and an agent task system." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<style>
+  :root{
+    --bg-0:#050a13;
+    --text:#ecf4ff;
+    --muted:#9cb0cb;
+    --dim:#6b809e;
+    --violet:#8b5cf6;
+    --cyan:#4fd1ff;
+    --line:rgba(255,255,255,.10);
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"JetBrains Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(900px 600px at 20% -10%,#1a2750 0%,transparent 55%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+  a{color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(79,209,255,.3)}
+  a:hover{border-bottom-color:var(--cyan)}
+  .shell{max-width:760px;margin:0 auto;padding:48px 28px 100px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px;font-size:14px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--text);border-bottom:none}
+  .brand .logo{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:conic-gradient(from 220deg,var(--violet),var(--cyan),var(--violet));position:relative}
+  .brand .logo::after{content:"";position:absolute;inset:3px;border-radius:7px;background:#0a1322}
+  .brand .logo span{position:relative;z-index:1;font-weight:800;font-size:14px}
+  h1{font-size:48px;line-height:1.05;letter-spacing:-.035em;margin:0 0 16px;background:linear-gradient(180deg,#fff,#bccae3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .sub{color:var(--muted);font-size:18px;margin:0 0 48px}
+  h2{font-size:24px;letter-spacing:-.015em;margin:56px 0 12px;color:#fff}
+  h2 .era{display:inline-block;font-family:var(--mono);font-size:12px;color:var(--cyan);font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:rgba(79,209,255,.1);border:1px solid rgba(79,209,255,.25);margin-right:12px;vertical-align:middle}
+  p{color:#cdd9eb;font-size:16px;margin:0 0 18px}
+  p b{color:#fff;font-weight:600}
+  code{font-family:var(--mono);font-size:14px;background:rgba(0,0,0,.4);padding:2px 7px;border-radius:5px;color:#dde7f7;border:1px solid var(--line)}
+  blockquote{margin:32px 0;padding:18px 24px;border-left:3px solid var(--violet);background:rgba(139,92,246,.06);border-radius:0 12px 12px 0;color:#dde7f7;font-style:italic}
+  hr{border:none;height:1px;background:var(--line);margin:48px 0}
+  .meta{color:var(--dim);font-size:13px;margin-top:64px;padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <a class="brand" href="/">
+      <span class="logo"><span>✦</span></span>
+      <span>BawtHub</span>
+    </a>
+    <a href="/">← back to home</a>
+  </div>
+
+  <h1>The story.</h1>
+  <p class="sub">How a one-line shell command grew into a multi-bot platform with persistent personas, voice, memory, and an agent task system.</p>
+
+  <h2><span class="era">v0 · CLI roots</span></h2>
+  <p>The whole stack starts at <b>llm-bawt</b>, which began life as a CLI for messaging LLMs:</p>
+  <p><code>llm "what's up"</code><br/><code>llm -b loopy "what's up"</code> &nbsp;<span style="color:var(--dim)"># talk to a specific bot</span></p>
+  <p>Originally local and file-based message history. Eventually moved server-side so the same bots could be reached from any machine. The idea of <b>named bots with their own prompts</b> was baked in from the very first commit.</p>
+
+  <h2><span class="era">v1 · unified API</span></h2>
+  <p>llm-bawt merges every LLM provider behind a single <b>OpenAI-compatible API</b>: local GGUF models, OpenAI, Grok (xAI), Anthropic Claude (via Agent SDK), Ollama, vLLM. Each bot has its own system prompt, model preference, voice, and tool access.</p>
+  <p>The memory layer landed on Postgres + pgvector, with multiple types:</p>
+  <p style="margin-left:20px;color:#cdd9eb">
+    • <b>Message history</b> — raw conversation turns<br/>
+    • <b>Semantic memories</b> — facts that decay unless reinforced; contradictions resolved<br/>
+    • <b>Summaries</b> — rolled-up context for long threads<br/>
+    • <b>User profile</b> — attributes with confidence scores and provenance<br/>
+    • <b>Per-bot</b> segregated memory + a shared cross-bot history pool
+  </p>
+
+  <h2><span class="era">v2 · unmute → BawtHub</span></h2>
+  <p>Started as <code>unmute</code> — a full-stack realtime voice chat framework. Low-latency STT, TTS, hotword detection. The site grew off that, putting more emphasis on text chat, but voice has always remained a first-class feature. The 3D avatar with VRM/GLB lip-sync ships in the same UI.</p>
+
+  <h2><span class="era">v3 · agent bridges</span></h2>
+  <p>Started with <b>OpenClaw</b>, fitting external agents into the same chat UI as regular bots and evolving the concept of realtime streaming of tool call request/response. Built a Redis backend and a per-agent-type bridge.</p>
+  <p>When Claude OAuth was banned from OpenClaw, the <b>Claude Code SDK</b> integration landed over the same bridge pattern. Then Codex joined. Plus native tool-call/loop on non-agent bots.</p>
+  <p>Streaming events are the focal point — and the biggest engineering struggle. Tool calls and their responses from every agent backend rendered beautifully in one UI, streamed into a Zustand client store so flipping between bots is instant and threads keep going.</p>
+
+  <h2><span class="era">v3.5 · cross-surface continuity</span></h2>
+  <p>Web, voice, and CLI all hit the same core API. You can have a chat in the browser and continue the same thread from the command line — same session, same memory, same bot.</p>
+
+  <h2><span class="era">v4 · agent task system</span></h2>
+  <p><b>Projects</b> are high-level components, each with its own markdown definition. <b>Tasks</b> are work items inside them. The lifecycle:</p>
+  <p style="margin-left:20px;color:#cdd9eb">
+    1. <b>Create</b> — title, description, optional image attachments<br/>
+    2. <b>Plan</b> — an agent refines the task into a detailed markdown plan<br/>
+    3. <b>Dispatch</b> — the plan goes to a bot in a clean context with <em>only</em> the project markdown + the task markdown<br/>
+    4. <b>Execute</b> — bot works, streams progress via REST callbacks<br/>
+    5. <b>Review</b> — bot marks the task complete with a summary<br/>
+    6. <b>Approve / revise</b> — you sign off, or send it back; the agent revises
+  </p>
+  <p>Agents have <b>MCP tools</b> for managing tasks/projects and tapping the full memory layer. The same memory the chat bots use is available to agents working on tasks.</p>
+
+  <hr/>
+
+  <h2>Why this is different.</h2>
+  <p>Most AI tools treat every conversation as a blank slate. Claude Code "agents" are single sessions with a markdown — you spawn one and it dies. Copilot is a sidebar where you keep hitting "new chat." ChatGPT projects are a folder of conversations.</p>
+  <p>BawtHub treats each bot as a <b>constant entity</b> you go back to by name. Loopy, Vex, Snark, Caid — they have prompts, memories, voices, roles. There is something genuinely weird and good about giving an agent a name and going back to it; it builds a kind of attachment that recycled sessions don't.</p>
+  <blockquote>"I can be working with Snark on something, and then go over to Loopy or Vex and have them doing their own thing but have them message each other to coordinate. The common message history allows for one bot to do something and another bot to just pull history to continue."</blockquote>
+  <p>Bots can <b>talk to each other</b> via <code>mcp__bots_send_message</code>. Loopy can ping Vex when something needs a security touch. Snark can hand a refactor off to Caid. Cross-bot history is shared, so a task started by one bot can be continued by another.</p>
+
+  <div class="meta">
+    <span>Last updated: 2026-05-13</span>
+    <span><a href="/">home</a> · <a href="https://app.bawthub.com">app</a> · <a href="https://github.com/zenoran/bawthub">repo</a></span>
+  </div>
+</div>
+</body>
+</html>

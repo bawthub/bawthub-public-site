@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BawtHub Architecture — System Map</title>
+<meta name="description" content="The full architecture of llm-bawt and BawtHub — every layer, every subsystem, every decision. Public documentation of a personal AI platform." />
+<meta property="og:title" content="BawtHub Architecture — System Map" />
+<meta property="og:description" content="Multi-page documentation of every architectural decision in llm-bawt and BawtHub." />
+<meta property="og:url" content="https://bawthub.com/architecture/" />
+<meta name="theme-color" content="#0a1322" />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">GitHub ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell wide">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> System map</div>
+    <h1 class="page-title">A guided tour of the <em>stack</em>.</h1>
+    <p class="lede">BawtHub is built on <code>llm-bawt</code> — a self-hosted, model-agnostic LLM platform with persistent personas, real-time voice, semantic memory, and agent orchestration. This documentation maps every layer. Pick a subsystem to dive in, or hit <kbd style="font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)">⌘K</kbd> to search.</p>
+    <div class="meta">
+      <span><b>~20 pages</b> · 2 live, growing</span>
+      <span><b>llm-bawt</b> public on GitHub</span>
+      <span>Last updated 2026-05-13</span>
+    </div>
+  </div>
+
+  <h2>The whole picture, in one <em>diagram</em>.</h2>
+  <p>Everything funnels through one OpenAI-compatible API. Surfaces (web, voice, CLI) hit the same endpoints. Tool calls and agent dispatches stream events back through a single bus. Memory is shared across bots and surfaces.</p>
+
+  <div class="sysmap">
+    <div class="layer-row" style="--accent:#4fd1ff">
+      <div class="lbl">Surfaces</div>
+      <div class="row">
+        <a class="card" href="#" data-soon="1" data-name="BawtHub web"><div class="t">BawtHub web</div><div class="d">Next.js 16 · React 19 · Zustand store</div></a>
+        <a class="card" href="#" data-soon="1" data-name="Voice"><div class="t">Voice</div><div class="d">STT · TTS · wake words · realtime ws</div></a>
+        <a class="card" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener"><div class="t">CLI &amp; MCP</div><div class="d"><code>llm -b loopy …</code> · MCP tools for agents</div></a>
+      </div>
+    </div>
+    <div class="arrow">↓ ↓ ↓</div>
+    <div class="layer-row" style="--accent:#8b5cf6">
+      <div class="lbl">Core</div>
+      <div class="row">
+        <a class="card" href="#" data-soon="1" data-name="OpenAI-compat API"><div class="t">OpenAI-compat API</div><div class="d">FastAPI · 18+ route files · streaming</div></a>
+        <a class="card" href="#" data-soon="1" data-name="Request pipeline"><div class="t">Request pipeline</div><div class="d">Turn lifecycle · prompt build · client dispatch</div></a>
+        <a class="card" href="#" data-soon="1" data-name="Tool execution"><div class="t">Tool execution</div><div class="d">Native loop · ReAct parser · streaming</div></a>
+      </div>
+    </div>
+    <div class="arrow">↓ ↓ ↓</div>
+    <div class="layer-row" style="--accent:#4fffd1">
+      <div class="lbl">State</div>
+      <div class="row">
+        <a class="card" href="/architecture/llm-bawt/memory.html"><div class="t">Memory</div><div class="d">pgvector · 5 layers (messages, semantic, summaries, profile, sessions)</div></a>
+        <a class="card" href="#" data-soon="1" data-name="Data schema"><div class="t">Data schema</div><div class="d">Postgres · Prisma · turn logs · activity</div></a>
+        <a class="card" href="#" data-soon="1" data-name="MCP server"><div class="t">MCP server</div><div class="d">56 tools · cross-bot memory access · task ops</div></a>
+      </div>
+    </div>
+    <div class="arrow">↓ ↓ ↓</div>
+    <div class="layer-row" style="--accent:#ffd24f">
+      <div class="lbl">Models</div>
+      <div class="row">
+        <a class="card" href="#" data-soon="1" data-name="Provider abstraction"><div class="t">Provider abstraction</div><div class="d">OpenAI · Claude · Grok · Ollama · vLLM · llama.cpp</div></a>
+        <a class="card" href="#" data-soon="1" data-name="Prompt adapters"><div class="t">Prompt adapters</div><div class="d">Per-model chat template (dolphin, pygmalion, default)</div></a>
+      </div>
+    </div>
+    <div class="arrow">↓ ↓ ↓</div>
+    <div class="layer-row" style="--accent:#ff63d8">
+      <div class="lbl">Agents</div>
+      <div class="row">
+        <a class="card" href="#" data-soon="1" data-name="Claude Code bridge"><div class="t">Claude Code</div><div class="d">SDK bridge · Redis fanout · streamed tool events</div></a>
+        <a class="card" href="#" data-soon="1" data-name="Codex bridge"><div class="t">Codex</div><div class="d">OAuth · session queue · per-bot threads</div></a>
+        <a class="card" href="#" data-soon="1" data-name="OpenClaw bridge"><div class="t">OpenClaw</div><div class="d">First bridge · WS · ingest · fanout</div></a>
+        <a class="card" href="#" data-soon="1" data-name="Task system"><div class="t">Task system</div><div class="d">Projects · plan · dispatch · review</div></a>
+      </div>
+    </div>
+  </div>
+
+  <h2>Pick a place to <em>start</em>.</h2>
+
+  <h3>Tour highlights</h3>
+  <div class="sectionidx">
+    <a href="/architecture/llm-bawt/memory.html">
+      <div class="t">Memory <span class="ar">→</span></div>
+      <div class="d">Five-layer state model: raw messages, semantic memories (with decay + supersede chains), rolling summaries, structured user profile, and sessions. The most opinionated subsystem.</div>
+    </a>
+    <a class="soon" href="#" data-soon="1" data-name="Agent task system">
+      <div class="t">Agent task system <span class="ar">→</span></div>
+      <div class="d">Plan → dispatch → execute → review, with markdown-typed projects, clean-context dispatch to bots, and MCP tools for agents to manage their own work.</div>
+    </a>
+    <a class="soon" href="#" data-soon="1" data-name="Claude Code bridge">
+      <div class="t">Claude Code bridge <span class="ar">→</span></div>
+      <div class="d">How an external agent SDK plugs into the chat UI with full streaming tool events. The pattern repeats for Codex and OpenClaw.</div>
+    </a>
+    <a class="soon" href="#" data-soon="1" data-name="MCP server">
+      <div class="t">MCP server <span class="ar">→</span></div>
+      <div class="d">56 tools exposed over <code>streamable-http</code>. Any agent — Claude Code, Codex, OpenClaw, or a human at the CLI — can manage memory, messages, tasks, and bots.</div>
+    </a>
+    <a class="soon" href="#" data-soon="1" data-name="Streaming events">
+      <div class="t">Streaming events <span class="ar">→</span></div>
+      <div class="d">The Redis-backed event bus that lets every backend (LLM tool loop, Claude Code, Codex, OpenClaw) emit tool calls and results in one unified format. The hard problem.</div>
+    </a>
+    <a class="soon" href="#" data-soon="1" data-name="Model client abstraction">
+      <div class="t">Model client abstraction <span class="ar">→</span></div>
+      <div class="d">Every provider — cloud or local — behind one interface. Bots pick a model per turn; the same conversation can hop between OpenAI, Claude, and a local GGUF.</div>
+    </a>
+  </div>
+
+  <h3>Browse by component</h3>
+  <div class="sectionidx">
+    <a class="soon" href="#" data-soon="1" data-name="llm-bawt overview">
+      <div class="t">llm-bawt <span class="ar">→</span></div>
+      <div class="d">The core platform. OpenAI-compatible API, memory, tools, agent backends, MCP server. Public on GitHub.</div>
+    </a>
+    <a class="soon" href="#" data-soon="1" data-name="BawtHub overview">
+      <div class="t">BawtHub <span class="ar">→</span></div>
+      <div class="d">The frontend. Next.js web UI, Python voice backend, 3D avatar, multi-surface streaming consumer.</div>
+    </a>
+    <a class="soon" href="#" data-soon="1" data-name="Deployment">
+      <div class="t">Deployment <span class="ar">→</span></div>
+      <div class="d">Docker on Unraid · NPM reverse proxy · Authelia · multi-host networking · agent bridges as sidecars.</div>
+    </a>
+  </div>
+
+  <h2>About this documentation.</h2>
+  <p>This site is built and maintained by an agent (currently <span class="pill violet">loopy</span> on Claude Sonnet) working from the live <code>llm-bawt</code> and <code>bawthub</code> repos. Subagents audit internal docs against current code on each major update, so divergence between this site and reality is small but not zero. The footer of each page shows when it was last validated.</p>
+  <p>If a diagram looks wrong, a code reference is stale, or you're confused — that's a bug. Open an issue on <a href="https://github.com/zenoran/llm-bawt" style="color:var(--cyan);border-bottom:1px solid rgba(79,209,255,.3)">llm-bawt</a> or email <a href="mailto:nick@ferreri.us" style="color:var(--cyan);border-bottom:1px solid rgba(79,209,255,.3)">Nick</a>.</p>
+
+  <div class="pagefoot">
+    <span>Tip: press <kbd style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)">⌘K</kbd> or <kbd style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)">/</kbd> to search.</span>
+    <span><a href="/">home</a> · <a href="/story.html">story</a> · <a href="https://github.com/zenoran/llm-bawt">repo</a></span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>

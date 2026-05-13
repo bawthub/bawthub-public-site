@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Memory · llm-bawt · BawtHub Architecture</title>
+<meta name="description" content="The five-layer memory architecture in llm-bawt: messages, semantic memories, summaries, profile attributes, and sessions — with pgvector, decay, supersede chains, and local-only consolidation." />
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+</head>
+<body>
+
+<div class="aurora"><div class="blob3"></div></div>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="logo"><span>✦</span></span>
+    <span>BawtHub</span>
+  </a>
+  <nav class="nav">
+    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
+    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
+  </nav>
+  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <div class="right">
+    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/llm-bawt/tree/main/src/llm_bawt/memory" target="_blank" rel="noopener">Source ↗</a>
+    <a class="cta" href="https://app.bawthub.com">Open app →</a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div class="kicker"><span class="dot"></span> llm-bawt · memory</div>
+    <h1 class="page-title">Five layers of <em>state</em>.</h1>
+    <p class="lede">Most chat platforms have two layers of memory: the system prompt and the messages array. llm-bawt has five — and they're designed to interact. Raw messages, distilled semantic memories, rolled-up summaries, structured profile attributes, and sessions. Each has its own table, its own update rules, and its own role at request time.</p>
+    <div class="meta">
+      <span><b>Storage:</b> Postgres + pgvector</span>
+      <span><b>Embeddings:</b> all-MiniLM-L6-v2 (384d, CPU)</span>
+      <span><b>Per-bot isolated</b> table namespaces</span>
+    </div>
+  </div>
+
+  <h2 id="layers"><span class="num">01</span> The five layers.</h2>
+  <p>Each layer lives in its own table (per bot, except <code>profiles</code> which is shared) and is consulted at different points in the request lifecycle. Older approaches mash these into one "context" string — llm-bawt keeps them separate so they can be reasoned about independently.</p>
+
+  <div class="diagram">
+    <div class="diagram-title">Memory layers · per bot unless noted</div>
+
+    <div style="display:grid;gap:10px">
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,209,255,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#bcefff;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#4fd1ff;box-shadow:0 0 10px #4fd1ff"></span>Messages</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill cyan"><code style="font-size:11px;color:#bcefff;background:none;border:none;padding:0">{bot_id}_messages</code></span><span class="pill">Raw turns</span><span class="pill">Never deleted</span><span class="pill">Full-text searchable</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(139,92,246,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#d9c8ff;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 10px #8b5cf6"></span>Semantic</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill violet"><code style="font-size:11px;color:#d9c8ff;background:none;border:none;padding:0">{bot_id}_memories</code></span><span class="pill">Distilled facts</span><span class="pill">Embedded</span><span class="pill">Importance-weighted</span><span class="pill">Decay + supersede</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(79,255,209,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c4fff0;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#4fffd1;box-shadow:0 0 10px #4fffd1"></span>Summaries</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill teal"><code style="font-size:11px;color:#c4fff0;background:none;border:none;padding:0">{bot_id}_summaries</code></span><span class="pill">Per-session</span><span class="pill">Budget-driven</span><span class="pill">Non-destructive</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,99,216,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#ffd3f7;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ff63d8;box-shadow:0 0 10px #ff63d8"></span>Profile</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill pink"><code style="font-size:11px;color:#ffd3f7;background:none;border:none;padding:0">profile_attributes</code></span><span class="pill gold">shared</span><span class="pill">Typed K/V</span><span class="pill">Confidence + source</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,210,79,.05)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff0bf;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ffd24f;box-shadow:0 0 10px #ffd24f"></span>Sessions</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill gold"><code style="font-size:11px;color:#fff0bf;background:none;border:none;padding:0">sessions</code></span><span class="pill gold">shared</span><span class="pill">Cross-bot grouping</span><span class="pill">Active / completed</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="isolation"><span class="num">02</span> Per-bot isolation, shared by design.</h2>
+  <p>Each bot owns its own message and memory tables, sanitized into a namespace like <code>snark_messages</code>, <code>snark_memories</code>. The same Postgres instance, the same connection pool — but isolated state. This means a single <code>memory_search</code> query stays inside a bot's namespace by default; cross-bot lookups go through explicit <code>memory_search_all</code> / <code>memory_search_source</code> MCP tools that any agent can opt into.</p>
+  <p>Why isolated tables and not just a <code>bot_id</code> column? Two reasons. <b>Speed:</b> indexes stay small, vector search is cheaper. <b>Composability:</b> spinning up a new bot or wiping one is a table drop, not a tombstone migration.</p>
+
+  <div class="callout spec">
+    <div class="ic">✦</div>
+    <div>
+      <strong>Profile and sessions are different.</strong>
+      <p>The profile attribute store is intentionally shared — a fact about you (Nick) shouldn't have to be relearned by every bot. The <code>profile_attributes</code> table keys on <code>(entity_type, entity_id)</code> where <code>entity_type</code> is <code>user</code> or <code>bot</code>. Sessions are shared so a conversation that hops between bots stays one session.</p>
+    </div>
+  </div>
+
+  <h2 id="search"><span class="num">03</span> Semantic search.</h2>
+  <p>Memories are embedded with <code>sentence-transformers/all-MiniLM-L6-v2</code> — 384-dimensional vectors, fast enough to run on CPU. The model is lazy-loaded on first use and cached for the process. pgvector handles the similarity query with an HNSW index.</p>
+  <p>The MCP surface exposes seven search variants:</p>
+  <table class="spec">
+    <thead><tr><th>Tool</th><th>Scope</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>memory_search</code></td><td>One bot</td><td>Default per-bot semantic search</td></tr>
+      <tr><td><code>memory_search_all</code></td><td>All bots</td><td>Cross-bot fan-out, returns source bot per hit</td></tr>
+      <tr><td><code>memory_search_source</code></td><td>Other bot, RO</td><td>Read-only lookup in another bot's memory</td></tr>
+      <tr><td><code>memory_list_recent</code></td><td>One bot</td><td>N newest memories, no embedding query</td></tr>
+      <tr><td><code>memory_list_high_importance</code></td><td>One bot</td><td>Filter by importance threshold</td></tr>
+      <tr><td><code>memory_list_sources</code></td><td>Server-wide</td><td>Discover which bots have memories at all</td></tr>
+      <tr><td><code>messages_search_all</code></td><td>All bots</td><td>Full-text search of raw messages</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="decay"><span class="num">04</span> Decay, supersede, consolidate.</h2>
+  <p>Memories don't accumulate forever. Three mechanisms keep the store curated:</p>
+
+  <h3>Importance + decay</h3>
+  <p>Each memory has an <code>importance</code> score (0.0–1.0) assigned at creation. A maintenance job decays importance over time unless the memory is reinforced (recalled, restated, or explicitly bumped). Below a threshold, memories are moved to the <code>{bot_id}_forgotten</code> table — soft-deleted, recoverable, but excluded from search.</p>
+
+  <h3>Supersede chains</h3>
+  <p>When a new fact contradicts an old one, <code>memory_supersede</code> marks the new memory as replacing the old. The old memory isn't deleted; it's left in place with a <code>superseded_by</code> reference, and search skips superseded records. This preserves the audit trail without polluting active recall.</p>
+
+  <h3>Consolidation</h3>
+  <p>Clusters of similar memories (cosine similarity above a threshold) are periodically merged into a single canonical memory. The merge is performed by a <b>local LLM only</b> — never an external API — to avoid sending personal data off-host. The originals are superseded by the consolidated memory.</p>
+
+  <div class="callout warn">
+    <div class="ic">⚠</div>
+    <div>
+      <strong>Privacy boundary: consolidation never leaves the host.</strong>
+      <p><code>memory/consolidation.py</code> explicitly checks the configured consolidation model and refuses any non-local backend (gguf or ollama only). This is a hard rule: distilling and merging stored personal facts is a fundamentally different trust boundary from one-off chat completions, and the system enforces it at the LLM dispatch layer.</p>
+    </div>
+  </div>
+
+  <h2 id="context"><span class="num">05</span> The context builder.</h2>
+  <p>Raw memory search results aren't what the LLM sees. At request time, the <code>context_builder</code> module categorizes recalled memories into four buckets and renders them as structured context blocks in the system prompt.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0 24px">
+    <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03)"><div style="font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Bucket 01</div><div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px">Core context</div><div style="font-size:13px;color:var(--muted);line-height:1.5">Foundational, high-stakes facts. Name, role, persistent constraints. "Always inject."</div></div>
+    <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03)"><div style="font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Bucket 02</div><div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px">Active concerns</div><div style="font-size:13px;color:var(--muted);line-height:1.5">Recent seeking-help / advice intents. What the user is currently working through.</div></div>
+    <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03)"><div style="font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Bucket 03</div><div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px">Preferences</div><div style="font-size:13px;color:var(--muted);line-height:1.5">Communication style, tool-use preferences, response shape.</div></div>
+    <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03)"><div style="font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Bucket 04</div><div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px">Background</div><div style="font-size:13px;color:var(--muted);line-height:1.5">General context. Everything else relevant to the query but not in the other three.</div></div>
+  </div>
+
+  <p>Each memory is classified using its <code>meaning</code> fields — <code>intent</code>, <code>stakes</code>, <code>emotional_charge</code>, <code>recurrence_keywords</code> — set at memory creation by the <code>memory_update_meaning</code> tool. Categorization is deterministic, not LLM-driven.</p>
+
+  <h2 id="summaries"><span class="num">06</span> Rolling summaries.</h2>
+  <p>Long histories don't fit in any LLM's context window. Two strategies handle this:</p>
+  <ol>
+    <li><b>Session detection.</b> Messages are bucketed into sessions by timestamp gap (default: 1 hour of silence = new session).</li>
+    <li><b>Budget-driven summarization.</b> When fitting recent history into the model's context would push older sessions out, those sessions are summarized — and only then. No prophylactic summarization. The raw messages stay in the messages table; the summary is just a compressed proxy used at injection time.</li>
+  </ol>
+  <p>Summarization is parallelized: per-session LLM calls run in a thread pool. The chosen model is configurable per bot via <code>summarize_model_override</code>.</p>
+
+  <h2 id="profile"><span class="num">07</span> Profile attributes.</h2>
+  <p>The profile system is the only memory layer that's <b>shared</b> across all bots. It stores typed key/value attributes for users <i>and</i> bots:</p>
+  <ul>
+    <li><b>User attributes</b> — facts about the human(s) using the system. Confidence-scored, sourced (which message produced this), updatable.</li>
+    <li><b>Bot attributes</b> — emergent personality drift. A bot can learn its own preferences through conversation: "I prefer terse responses," "I sign off with a checkmark." This is how the bawts become characters over time.</li>
+  </ul>
+  <p>Profile attributes are auto-extracted from high-importance facts (<code>importance &gt; 0.7</code>) by the <code>facts_extract</code> tool, with safety rails: a <code>ALLOWED_PROFILE_KEYS</code> allowlist and <code>BLOCKED_PROFILE_PATTERNS</code> regex set prevent the system from learning things like passwords or absurd attributes.</p>
+
+  <h2 id="maintenance"><span class="num">08</span> Maintenance jobs.</h2>
+  <p>A scheduled <code>system_run_maintenance</code> MCP tool (also runnable on a cron) batches:</p>
+  <ul>
+    <li>Memory consolidation across similarity clusters</li>
+    <li>Importance decay + soft-delete to <code>forgotten</code></li>
+    <li>Orphan cleanup (memories whose source messages were ignored/recalled)</li>
+    <li>Recurrence detection (bumping memories that keep coming up)</li>
+    <li>Profile attribute consolidation (resolving contradictions)</li>
+  </ul>
+
+  <h2 id="dashboard"><span class="num">09</span> The memory dashboard.</h2>
+  <p>The BawtHub UI exposes the memory layer at <code>/tools/memory</code>. Per bot, you can browse session-grouped previews, run on-demand consolidations, regenerate embeddings (e.g. after model upgrades), and rebuild summaries.</p>
+
+  <div class="shot">
+    <img src="/images/memory.jpg" alt="BawtHub memory dashboard showing 37 sessions, 529 messages, 198 summaries for Snark" />
+    <div class="caption"><b>/tools/memory</b> — Snark's memory dashboard. 12 distilled memories, 2,439 raw messages, 198 summaries, 37 sessions in the current preview window. The Summarize and Maintenance panels run jobs on demand against just this bot's tables.</div>
+  </div>
+
+  <h2 id="files"><span class="num">10</span> Key files.</h2>
+  <div class="files">
+    <div class="fileref"><code>memory/postgresql.py</code><div class="desc"><b>The backend.</b> ~1,900 lines. SQLAlchemy table builders, search, importance + decay logic, supersede mechanics, the <code>PostgreSQLMemoryBackend</code> class.</div></div>
+    <div class="fileref"><code>memory/embeddings.py</code><div class="desc"><b>Sentence-transformers wrapper.</b> Lazy loads <code>all-MiniLM-L6-v2</code>; warns on first use; cached for the process.</div></div>
+    <div class="fileref"><code>memory/consolidation.py</code><div class="desc"><b>Cluster + merge.</b> Local-LLM-only. Finds similar-embedding clusters, asks a gguf/ollama model to merge them, supersedes the originals.</div></div>
+    <div class="fileref"><code>memory/context_builder.py</code><div class="desc"><b>Recall → injection.</b> Categorizes memories into core / concerns / preferences / background and renders them for the system prompt.</div></div>
+    <div class="fileref"><code>memory/summarization.py</code><div class="desc"><b>Budget-driven compression.</b> Session detection by timestamp gap; per-session summary; runs in a thread pool when context would overflow.</div></div>
+    <div class="fileref"><code>memory/profile_maintenance.py</code><div class="desc"><b>Profile resolution.</b> LLM-driven consolidation of contradicting profile attributes.</div></div>
+    <div class="fileref"><code>memory/extraction/</code><div class="desc"><b>Fact + attribute extraction.</b> LLM prompts for distilling memories from raw messages and routing high-importance facts into profile attributes.</div></div>
+    <div class="fileref"><code>profiles.py</code><div class="desc"><b>Shared profile store.</b> SQLModel ORM; <code>EntityType</code> enum with <code>USER</code> / <code>BOT</code>; confidence + source provenance on every attribute.</div></div>
+    <div class="fileref"><code>mcp_server/server.py</code><div class="desc"><b>The 14 memory MCP tools.</b> Store, search, update, supersede, list, consolidate, regenerate-embeddings, plus the four "messages preview" variants and the soft-delete <code>messages_ignore_*</code> family.</div></div>
+  </div>
+
+  <div class="prevnext">
+    <a class="prev" href="#" data-soon="1" data-name="Model clients"><span class="lbl">Previous</span><span class="t">Model clients</span></a>
+    <a class="next" href="#" data-soon="1" data-name="Tools"><span class="lbl">Next</span><span class="t">Tools</span></a>
+  </div>
+
+  <div class="pagefoot">
+    <span>Validated against <code>main</code> on <b>2026-05-13</b></span>
+    <span>Source: <a href="https://github.com/zenoran/llm-bawt/tree/main/src/llm_bawt/memory">llm-bawt/src/llm_bawt/memory</a></span>
+  </div>
+
+</main>
+
+<script src="/architecture/assets/site.js?v=2" defer></script>
+</body>
+</html>
