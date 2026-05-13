@@ -1,17 +1,17 @@
-// BawtHub Architecture — shared client JS
-// Mega-menu hover/click + command palette + coming-soon toast
+// BawtHub Architecture — shared client JS (v3: no mega-menu)
+// Cmd-K palette + coming-soon toast + section-rail active highlighting.
 
 (function(){
   'use strict';
 
-  // ---- Site index (single source of truth for nav + cmdk) ----
+  // ---- Site index (single source of truth for cmdk + rails) ----
   const PAGES = {
     overview: {
       label: 'Overview', icon: '◧',
       items: [
         { href: '/architecture/', icon: '✦', name: 'System map', desc: 'The whole stack on one page.', built: true },
-        { href: '/story.html',   icon: '✍', name: 'The story',  desc: 'How a CLI grew into a multi-bot platform.', built: true },
-        { href: '/',             icon: '⌂', name: 'Home',       desc: 'Back to the bawthub.com landing page.', built: true },
+        { href: '/story.html',    icon: '✍', name: 'The story',  desc: 'How a CLI grew into a multi-bot platform.', built: true },
+        { href: '/',              icon: '⌂', name: 'Home',       desc: 'Back to the bawthub.com landing page.', built: true },
       ]
     },
     'llm-bawt': {
@@ -32,6 +32,7 @@
       label: 'BawtHub', icon: '◐',
       items: [
         { href: '/architecture/bawthub/overview.html', icon: '◑', name: 'Overview',           desc: 'Next.js web + Python voice + 3D avatar.', built: true },
+        { href: '/architecture/bawthub/chat.html',     icon: '💬', name: 'Chat surface',       desc: 'How tool calls render. Diffs, parsed commands, MCP pills.', built: true },
         { href: '/architecture/bawthub/frontend.html', icon: '◇', name: 'Frontend',           desc: 'Next.js 16 · React 19 · Zustand store.', built: true },
         { href: '/architecture/bawthub/voice.html',    icon: '◉', name: 'Voice pipeline',     desc: 'STT (moshi) · TTS · pause-driven turns · realtime ws.', built: true },
         { href: '/architecture/bawthub/avatar.html',   icon: '☻', name: '3D avatar',          desc: 'VRM/GLB · three.js · lip-sync.', built: true },
@@ -59,87 +60,7 @@
     },
   };
 
-  // Mark "built" pages globally so the rest are marked soon.
-  // (Items default to soon unless built:true.)
-
-  // ---- Mega-menu ----
-  function setupMegaMenu(){
-    const buttons = document.querySelectorAll('.topbar .nav .nav-btn[data-menu]');
-    let openPanel = null;
-    let closeTimer = null;
-
-    function buildPanel(key){
-      const section = PAGES[key];
-      if(!section) return null;
-      const panel = document.createElement('div');
-      panel.className = 'megapanel';
-      panel.dataset.menu = key;
-      panel.innerHTML = `
-        <div class="head"><span class="t">${section.label}</span><span class="h">${section.items.length} pages</span></div>
-        <div class="grid">
-          ${section.items.map(it => `
-            <a class="card${it.built ? '' : ' soon'}" href="${it.built ? it.href : '#'}" ${it.built ? '' : 'data-soon="1"'} ${it.external ? 'target="_blank" rel="noopener"' : ''}>
-              <div class="ic">${it.icon}</div>
-              <div>
-                <div class="nm">${it.name}${it.built ? '' : '<span class="badge">soon</span>'}</div>
-                <div class="ds">${it.desc}</div>
-              </div>
-            </a>`).join('')}
-        </div>
-      `;
-      // Keep panel open while hovered
-      panel.addEventListener('mouseenter', () => { clearTimeout(closeTimer); });
-      panel.addEventListener('mouseleave', () => scheduleClose());
-      panel.addEventListener('click', (e) => {
-        const a = e.target.closest('a');
-        if(a && a.dataset.soon){
-          e.preventDefault();
-          showToast(`${a.querySelector('.nm').textContent.replace('soon','').trim()} — coming soon`);
-          closeMenu();
-        }
-      });
-      document.body.appendChild(panel);
-      return panel;
-    }
-
-    function openMenu(btn){
-      const key = btn.dataset.menu;
-      let panel = document.querySelector(`.megapanel[data-menu="${key}"]`) || buildPanel(key);
-      if(!panel) return;
-      if(openPanel && openPanel !== panel){ openPanel.classList.remove('open'); }
-      buttons.forEach(b => b.classList.toggle('open', b === btn));
-      panel.classList.add('open');
-      // Position relative to button
-      const rect = btn.getBoundingClientRect();
-      panel.style.left = '';
-      panel.style.transform = '';
-      const w = panel.offsetWidth;
-      const desiredLeft = rect.left + rect.width/2 - w/2;
-      const clampedLeft = Math.max(12, Math.min(window.innerWidth - w - 12, desiredLeft));
-      panel.style.left = clampedLeft + 'px';
-      panel.style.transform = 'translateY(0)';
-      openPanel = panel;
-    }
-
-    function closeMenu(){
-      if(openPanel){ openPanel.classList.remove('open'); openPanel = null; }
-      buttons.forEach(b => b.classList.remove('open'));
-    }
-    function scheduleClose(){ clearTimeout(closeTimer); closeTimer = setTimeout(closeMenu, 140); }
-
-    buttons.forEach(btn => {
-      btn.addEventListener('mouseenter', () => { clearTimeout(closeTimer); openMenu(btn); });
-      btn.addEventListener('mouseleave', () => scheduleClose());
-      btn.addEventListener('click', (e) => { e.preventDefault(); openMenu(btn); });
-      btn.addEventListener('focus', () => openMenu(btn));
-    });
-    document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeMenu(); });
-    document.addEventListener('click', (e) => {
-      if(!e.target.closest('.megapanel') && !e.target.closest('.nav-btn[data-menu]')) closeMenu();
-    });
-  }
-
-  // ---- Command palette ----
+  // ---- Cmd-K command palette ----
   function setupCmdK(){
     const flat = [];
     Object.entries(PAGES).forEach(([key, sec]) => {
@@ -170,12 +91,11 @@
 
     function render(){
       if(!filtered.length){ list.innerHTML = `<div class="empty">No matches.</div>`; return; }
-      // Group by section
       const groups = {};
       filtered.forEach(it => { (groups[it.section] = groups[it.section] || []).push(it); });
       const html = Object.entries(groups).map(([sec, items]) => `
         <div class="group-label">${sec}</div>
-        ${items.map((it, i) => {
+        ${items.map(it => {
           const globalIdx = filtered.indexOf(it);
           return `
             <a class="it${it.built ? '' : ' soon'}${globalIdx === activeIndex ? ' active' : ''}" href="${it.built ? it.href : '#'}" data-idx="${globalIdx}" ${it.built ? '' : 'data-soon="1"'} ${it.external ? 'target="_blank" rel="noopener"' : ''}>
@@ -207,6 +127,10 @@
       if(!it.built){ showToast(`${it.name} — coming soon`); return; }
       if(it.external) window.open(it.href, '_blank'); else window.location.href = it.href;
     }
+    function scrollActive(){
+      const el = list.querySelector('.it.active');
+      if(el) el.scrollIntoView({ block: 'nearest' });
+    }
 
     input.addEventListener('input', e => filter(e.target.value));
     input.addEventListener('keydown', e => {
@@ -215,10 +139,6 @@
       else if(e.key === 'Enter'){ e.preventDefault(); go(filtered[activeIndex]); }
       else if(e.key === 'Escape'){ e.preventDefault(); close(); }
     });
-    function scrollActive(){
-      const el = list.querySelector('.it.active');
-      if(el) el.scrollIntoView({ block: 'nearest' });
-    }
     backdrop.addEventListener('click', e => {
       if(e.target === backdrop){ close(); return; }
       const a = e.target.closest('a.it');
@@ -242,8 +162,112 @@
         if(!backdrop.classList.contains('open')) open();
       }
     });
-    // Click search button
     document.querySelectorAll('[data-cmdk]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); open(); }));
+  }
+
+  // ---- Section accent colors ----
+  const SECTION_COLORS = {
+    overview:    '#4fd1ff',
+    'llm-bawt':  '#8b5cf6',
+    bawthub:     '#4fd1ff',
+    agents:      '#ff63d8',
+    more:        '#ffd24f',
+  };
+
+  // ---- Detect current section from URL ----
+  function currentSectionKey(path){
+    if(path === '/architecture/' || path === '/architecture/index.html') return null; // system map = no rail
+    if(path.startsWith('/architecture/llm-bawt/')) return 'llm-bawt';
+    if(path.startsWith('/architecture/bawthub/'))  return 'bawthub';
+    if(path.startsWith('/architecture/agents/'))   return 'agents';
+    if(path.startsWith('/architecture/streaming/') ||
+       path.startsWith('/architecture/data/') ||
+       path.startsWith('/architecture/deployment/')) return 'more';
+    return null;
+  }
+
+  function pageInSection(sectionKey, path){
+    const section = PAGES[sectionKey];
+    if(!section) return -1;
+    return section.items.findIndex(it => {
+      // normalize trailing slashes
+      const hrefNorm = it.href.replace(/\/$/, '');
+      const pathNorm = path.replace(/\/$/, '').replace(/\/index\.html$/, '');
+      return hrefNorm === pathNorm;
+    });
+  }
+
+  // ---- Auto-render breadcrumb pill in topbar ----
+  function setupBreadcrumb(){
+    const slot = document.querySelector('[data-bcrumb]');
+    if(!slot) return;
+    const path = window.location.pathname;
+    const sectionKey = currentSectionKey(path);
+    if(!sectionKey){
+      slot.outerHTML = `<a class="bcrumb" href="/architecture/" style="--accent:#4fd1ff"><span class="crumb-section">Architecture</span></a>`;
+      return;
+    }
+    const section = PAGES[sectionKey];
+    const idx = pageInSection(sectionKey, path);
+    const here = idx >= 0 ? section.items[idx].name : 'Page';
+    const accent = SECTION_COLORS[sectionKey] || '#4fd1ff';
+    slot.outerHTML = `<a class="bcrumb" href="/architecture/" style="--accent:${accent}">
+      <span class="crumb-section">${section.label}</span>
+      <span class="crumb-sep">/</span>
+      <span class="crumb-here">${here}</span>
+    </a>`;
+  }
+
+  // ---- Auto-render section rail ----
+  function setupRail(){
+    const slot = document.querySelector('[data-rail]');
+    if(!slot) return;
+    const path = window.location.pathname;
+    const sectionKey = currentSectionKey(path);
+    if(!sectionKey){ slot.remove(); return; }
+    const section = PAGES[sectionKey];
+    const idx = pageInSection(sectionKey, path);
+    const accent = SECTION_COLORS[sectionKey] || '#4fd1ff';
+    const items = section.items.map((it, i) => {
+      const active = (i === idx) ? ' active' : '';
+      const soon = it.built ? '' : ' soon';
+      const dataSoon = it.built ? '' : 'data-soon="1"';
+      const num = String(i+1).padStart(2,'0');
+      return `<a class="r-item${active}${soon}" href="${it.built ? it.href : '#'}" ${dataSoon}>
+        <span class="r-num">${num}</span>${it.name}
+      </a>`;
+    }).join('');
+    slot.outerHTML = `<nav class="rail">
+      <div class="rail-inner" style="--accent:${accent}">
+        <span class="rail-label">${section.label}</span>
+        ${items}
+        <div class="rail-jump">
+          <a href="/architecture/">System map</a>
+        </div>
+      </div>
+    </nav>`;
+
+    // After insertion, scroll active into view
+    requestAnimationFrame(() => {
+      const inner = document.querySelector('.rail-inner');
+      if(!inner) return;
+      const active = inner.querySelector('.r-item.active');
+      if(active){
+        const target = active.offsetLeft - inner.offsetWidth/2 + active.offsetWidth/2;
+        inner.scrollTo({ left: Math.max(0, target), behavior: 'instant' in inner.scrollTo ? 'instant' : 'auto' });
+      }
+    });
+  }
+
+  // ---- Tool-call expand/collapse on the chat page ----
+  function setupToolCalls(){
+    document.body.addEventListener('click', e => {
+      const head = e.target.closest('.tc-head');
+      if(head){
+        const tc = head.closest('.tc');
+        if(tc) tc.classList.toggle('collapsed');
+      }
+    });
   }
 
   // ---- Coming-soon toast ----
@@ -260,7 +284,6 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
   }
-  // Wire any element with data-soon attribute (used in inline sysmap cards too)
   function setupSoonLinks(){
     document.body.addEventListener('click', e => {
       const a = e.target.closest('a[data-soon]');
@@ -272,20 +295,11 @@
     });
   }
 
-  // ---- Mobile menu ----
-  function setupMobileMenu(){
-    const toggle = document.querySelector('.menu-toggle');
-    if(!toggle) return;
-    toggle.addEventListener('click', () => {
-      // On mobile, fallback to cmdk
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
-    });
-  }
-
   document.addEventListener('DOMContentLoaded', () => {
-    setupMegaMenu();
+    setupBreadcrumb();
+    setupRail();
     setupCmdK();
     setupSoonLinks();
-    setupMobileMenu();
+    setupToolCalls();
   });
 })();

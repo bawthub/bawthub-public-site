@@ -11,31 +11,23 @@
 <meta name="theme-color" content="#0a1322" />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-<link rel="stylesheet" href="/architecture/assets/site.css?v=2" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=3" />
 </head>
 <body>
-
-<div class="aurora"><div class="blob3"></div></div>
 
 <header class="topbar">
   <a class="brand" href="/">
     <span class="logo"><span>✦</span></span>
     <span>BawtHub</span>
   </a>
-  <nav class="nav">
-    <span class="nav-btn" data-menu="overview" tabindex="0">Overview <span class="chev">▾</span></span>
-    <span class="nav-btn" data-menu="llm-bawt" tabindex="0">llm-bawt <span class="chev">▾</span></span>
-    <span class="nav-btn" data-menu="bawthub" tabindex="0">BawtHub <span class="chev">▾</span></span>
-    <span class="nav-btn" data-menu="agents" tabindex="0">Agents <span class="chev">▾</span></span>
-    <span class="nav-btn" data-menu="more" tabindex="0">More <span class="chev">▾</span></span>
-  </nav>
-  <button class="menu-toggle" aria-label="Menu">☰</button>
+  <span data-bcrumb></span>
   <div class="right">
-    <a class="ghost search-btn" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
-    <a class="ghost" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">GitHub ↗</a>
+    <a class="ghost" href="#" data-cmdk>⌕ Search <kbd>⌘K</kbd></a>
+    <a class="ghost" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">Source ↗</a>
     <a class="cta" href="https://app.bawthub.com">Open app →</a>
   </div>
 </header>
+<span data-rail></span>
 
 <main class="shell wide">
 
@@ -44,7 +36,7 @@
     <h1 class="page-title">A guided tour of the <em>stack</em>.</h1>
     <p class="lede">BawtHub is built on <code>llm-bawt</code> — a self-hosted, model-agnostic LLM platform with persistent personas, real-time voice, semantic memory, and agent orchestration. This documentation maps every layer. Pick a subsystem to dive in, or hit <kbd style="font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)">⌘K</kbd> to search.</p>
     <div class="meta">
-      <span><b>22 pages</b> · audited against current code</span>
+      <span><b>23 pages</b> · audited against current code</span>
       <span><b>llm-bawt</b> public on GitHub</span>
       <span>Last updated 2026-05-13</span>
     </div>
@@ -104,29 +96,29 @@
 
   <h3>Tour highlights</h3>
   <div class="sectionidx">
-    <a href="/architecture/llm-bawt/memory.html">
+    <a href="/architecture/bawthub/chat.html" style="--accent:#4fd1ff">
+      <div class="t">Chat surface <span class="ar">→</span></div>
+      <div class="d">One render engine, every tool call. Diffs that mean something, parsed bash/SSH commands, the MCP pill, streaming statuses, grouping. The dense visible output of every backend underneath.</div>
+    </a>
+    <a href="/architecture/llm-bawt/memory.html" style="--accent:#4fffd1">
       <div class="t">Memory <span class="ar">→</span></div>
       <div class="d">Five-layer state model: raw messages, semantic memories (with decay + supersede chains), rolling summaries, structured user profile, and sessions. The most opinionated subsystem.</div>
     </a>
-    <a href="/architecture/agents/task-system.html">
+    <a href="/architecture/agents/task-system.html" style="--accent:#ff63d8">
       <div class="t">Agent task system <span class="ar">→</span></div>
       <div class="d">Plan → dispatch → execute → review, with markdown-typed projects, clean-context dispatch to bots, and MCP tools for agents to manage their own work.</div>
     </a>
-    <a href="/architecture/agents/claude-code-bridge.html">
+    <a href="/architecture/agents/claude-code-bridge.html" style="--accent:#8b5cf6">
       <div class="t">Claude Code bridge <span class="ar">→</span></div>
       <div class="d">How an external agent SDK plugs into the chat UI with full streaming tool events. The pattern repeats for Codex and OpenClaw.</div>
     </a>
-    <a href="/architecture/llm-bawt/mcp-server.html">
+    <a href="/architecture/llm-bawt/mcp-server.html" style="--accent:#ff63d8">
       <div class="t">MCP server <span class="ar">→</span></div>
       <div class="d">60 tools exposed over <code>streamable-http</code>. Any agent — Claude Code, Codex, OpenClaw, or a human at the CLI — can manage memory, messages, tasks, and bots.</div>
     </a>
-    <a href="/architecture/streaming/">
+    <a href="/architecture/streaming/" style="--accent:#ffd24f">
       <div class="t">Streaming events <span class="ar">→</span></div>
       <div class="d">The Redis-backed event bus that lets every backend (LLM tool loop, Claude Code, Codex, OpenClaw) emit tool calls and results in one unified format. The hard problem.</div>
-    </a>
-    <a href="/architecture/llm-bawt/clients.html">
-      <div class="t">Model client abstraction <span class="ar">→</span></div>
-      <div class="d">Every provider — cloud or local — behind one interface. Bots pick a model per turn; the same conversation can hop between OpenAI, Claude, and a local GGUF.</div>
     </a>
   </div>
 
@@ -157,6 +149,6 @@
 
 </main>
 
-<script src="/architecture/assets/site.js?v=2" defer></script>
+<script src="/architecture/assets/site.js?v=3" defer></script>
 </body>
 </html>
