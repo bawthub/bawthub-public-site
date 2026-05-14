@@ -220,7 +220,7 @@ max_threads = 10</pre>
     <div class="fileref"><code>src/codex_bridge/local_plugins.py</code><div class="desc"><b>Plugin staging.</b> Mirrors <code>~/dev/agent-skills/codex/.codex-plugin/marketplace.json</code> into <code>~/.agents/plugins/</code> at startup. Resolves skill entries to live repo paths.</div></div>
     <div class="fileref"><code>src/codex_bridge/parser_patch.py</code><div class="desc"><b>SDK monkey-patch.</b> Patches SDK internals where event shapes drifted from what the bridge expects. Used as a quick-turn fix mechanism between SDK releases.</div></div>
     <div class="fileref"><code>src/codex_bridge/exec_patch.py</code><div class="desc"><b>Subprocess wrapper.</b> Locates the bundled Codex Rust binary and wires up env var scrubbing (<code>CODEX_API_KEY</code>, <code>OPENAI_API_KEY</code>).</div></div>
-    <div class="fileref"><code>src/llm_bawt/agent_backends/codex.py</code><div class="desc"><b>The backend.</b> 42 lines. <code>name = "codex"</code>; routing key is <code>{bot_id}:{user_id}</code>, identical to <code>claude-code</code>. Otherwise inherits the entire <code>OpenClawBackend.stream_raw()</code> pipeline.</div></div>
+    <div class="fileref"><code>src/llm_bawt/agent_backends/codex.py</code><div class="desc"><b>The backend.</b> 42 lines. <code>name = "codex"</code>; routing key is <code>{bot_id}:{user_id}</code>, identical to <code>claude-code</code>. Otherwise inherits the entire <code>AgentBridgeBackend.stream_raw()</code> pipeline.</div></div>
   </div>
 
   <div class="prevnext">

@@ -62,19 +62,23 @@ myagent = "mypackage.agents:MyAgentBackend"</pre>
 
   <p>The registry in <code>agent_backends/registry.py</code> loads entry points on import and falls back to the three builtins: <code>openclaw</code>, <code>claude-code</code>, <code>codex</code>.</p>
 
-  <h2 id="openclaw"><span class="num">03</span> OpenClaw — the reference implementation.</h2>
-  <p><code>agent_backends/openclaw.py</code> (412 lines) is the canonical agent backend. The other two inherit from it. The relationship to the OpenClaw gateway is mediated entirely through Redis: there's no direct WebSocket connection from llm-bawt to the gateway.</p>
+  <h2 id="agent-bridge"><span class="num">03</span> <code>AgentBridgeBackend</code> — the shared protocol.</h2>
+  <p>The generic bridge protocol lives in the <code>src/agent_bridge/</code> package and the <code>AgentBridgeBackend</code> base class. Every external-agent integration — OpenClaw, Claude Code, Codex — is a thin subclass that overrides <code>name</code> and the routing-key resolver. The 400-line round-trip plumbing only exists once.</p>
+
+  <p>The relationship between llm-bawt and any bridge process is mediated entirely through Redis: there's no direct WebSocket from llm-bawt to the gateway, no in-process SDK call, no shared address space. The bridge is always a separate OS process, often a separate container.</p>
 
   <div class="diagram">
-    <div class="diagram-title">OpenClaw command/event flow</div>
+    <div class="diagram-title">Bridge command/event flow (same for openclaw, claude-code, codex)</div>
     <div style="display:grid;gap:6px;font-size:13px;color:var(--muted)">
-      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(79,209,255,.04)"><b>llm-bawt</b> · <code>OpenClawBackend.stream_raw</code> sends a Redis command (<code>chat.send</code>) with the prompt, session key, model alias, attachments.</div>
-      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(139,92,246,.04)"><b>openclaw-bridge</b> · subscribes to the command stream, forwards the chat to the gateway over a persistent WebSocket. The bridge is a separate process.</div>
-      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(79,255,209,.04)"><b>gateway</b> · runs the actual model + tools, streams back events.</div>
-      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(255,99,216,.04)"><b>openclaw-bridge</b> · receives gateway events, publishes them on a per-request Redis stream.</div>
-      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(255,210,79,.04)"><b>llm-bawt</b> · subscribes to the per-request stream, yields text deltas + dict-shaped tool events to the SSE generator.</div>
+      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(79,209,255,.04)"><b>llm-bawt</b> · <code>AgentBridgeBackend.stream_raw</code> publishes a <code>chat.send</code> command on the <code>agent:commands</code> Redis stream — prompt, session key, model alias, attachments. The <code>backend</code> field tags it for the right bridge.</div>
+      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(139,92,246,.04)"><b>bridge process</b> · the matching bridge (<code>openclaw-bridge</code>, <code>claude-code-bridge</code>, or <code>codex-bridge</code>) is the consumer for that backend tag and runs the SDK / gateway call on its side.</div>
+      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(79,255,209,.04)"><b>SDK / gateway</b> · runs the actual model + tools, streams back its native events.</div>
+      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(255,99,216,.04)"><b>bridge process</b> · normalizes those native events into <code>AgentEvent</code> records and publishes them on a per-request Redis stream.</div>
+      <div style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(255,210,79,.04)"><b>llm-bawt</b> · subscribes to that per-request stream, yields text deltas + dict-shaped tool events to the SSE generator.</div>
     </div>
   </div>
+
+  <p><b>OpenClawBackend</b> is now a 30-line subclass of <code>AgentBridgeBackend</code> that sets <code>name = "openclaw"</code> and resolves session keys from the bot's <code>agent_backend_config.session_key</code>. The 412-line shared mechanics — Redis subscription, ASSISTANT_DONE reconciliation, request-local state, abort handling — moved into the base. The same is true for <code>ClaudeCodeBackend</code> and <code>CodexBackend</code>: each is a small subclass that picks a session-key strategy and inherits everything else.</p>
 
   <p>The backend yields a mix of types from <code>stream_raw</code>:</p>
   <ul>
@@ -88,9 +92,9 @@ myagent = "mypackage.agents:MyAgentBackend"</pre>
   <p>The <code>ASSISTANT_DONE</code> event from the gateway carries the complete response text. Because gateway tool-heavy turns sometimes only emit the final synthesis in <code>DONE</code> rather than as <code>ASSISTANT_DELTA</code>s, the backend reconciles: if <code>done.text</code> starts with the accumulated deltas, it yields the extra. If it doesn't (prefix mismatch), it logs a warning and yields the full <code>done.text</code> so persistence is at least correct, even if the SSE stream duplicates some content.</p>
 
   <h2 id="claudecode"><span class="num">04</span> Claude Code — same protocol, different bridge.</h2>
-  <p><code>agent_backends/claude_code.py</code> is 37 lines. It subclasses <code>OpenClawBackend</code> and overrides exactly one method:</p>
+  <p><code>agent_backends/claude_code.py</code> is 37 lines. It subclasses <code>AgentBridgeBackend</code> and overrides exactly one method:</p>
 
-  <pre style="margin:18px 0 22px;padding:18px 22px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:13px;color:#bcefff;line-height:1.7;overflow-x:auto">class ClaudeCodeBackend(OpenClawBackend):
+  <pre style="margin:18px 0 22px;padding:18px 22px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:13px;color:#bcefff;line-height:1.7;overflow-x:auto">class ClaudeCodeBackend(AgentBridgeBackend):
     name = "claude-code"
 
     def _resolve_session_key(self, config: dict) -> str:
@@ -107,7 +111,7 @@ myagent = "mypackage.agents:MyAgentBackend"</pre>
   <p>The chat-route session-reset endpoint (<code>POST /v1/chat/session/reset</code>) sends a <code>session.reset</code> RPC over Redis with the bot-slug routing key. The bridge wipes its stored SDK session and starts fresh on the next turn. Each user gets their own Claude conversation thread — a property the SDK provides naturally and the routing key preserves.</p>
 
   <h2 id="codex"><span class="num">05</span> Codex — same shape again.</h2>
-  <p><code>agent_backends/codex.py</code> is 41 lines and structurally identical to Claude Code: subclass <code>OpenClawBackend</code>, override <code>_resolve_session_key</code> to return <code>"{bot}:{user}"</code>, ship.</p>
+  <p><code>agent_backends/codex.py</code> is 41 lines and structurally identical to Claude Code: subclass <code>AgentBridgeBackend</code>, override <code>_resolve_session_key</code> to return <code>"{bot}:{user}"</code>, ship.</p>
 
   <p>The differences are on the bridge side: <code>codex-bridge</code> uses the <code>openai-codex-sdk</code> package and authenticates via the ChatGPT-mode OAuth flow (not an API key). Its persisted <code>session_key</code> in <code>agent_backend_config</code> is the Codex <code>thread_id</code> written by the bridge after the first <code>thread/started</code> event — managed automatically; cleared by a <code>/new</code> command or a model change.</p>
 
@@ -126,7 +130,7 @@ myagent = "mypackage.agents:MyAgentBackend"</pre>
     <li>Start the periodic stale-consumer-group cleanup (every 5 minutes).</li>
   </ol>
 
-  <p>If the subscriber isn't initialized at request time (because Redis is unreachable or the flags weren't set), <code>OpenClawBackend.stream_raw</code> raises a clear <code>RuntimeError</code> rather than silently producing empty responses.</p>
+  <p>If the subscriber isn't initialized at request time (because Redis is unreachable or the flags weren't set), <code>AgentBridgeBackend.stream_raw</code> raises a clear <code>RuntimeError</code> rather than silently producing empty responses.</p>
 
   <h2 id="abort"><span class="num">08</span> Abort and session reset.</h2>
   <p>The chat route has two endpoints specifically for agent backends:</p>
@@ -157,8 +161,10 @@ myagent = "mypackage.agents:MyAgentBackend"</pre>
   <div class="files">
     <div class="fileref"><code>agent_backends/base.py</code><div class="desc"><b><code>AgentBackend</code>.</b> 50 lines. Abstract base — one async <code>chat()</code> method, optional <code>health_check()</code>. The whole plugin contract.</div></div>
     <div class="fileref"><code>agent_backends/registry.py</code><div class="desc"><b>Plugin registry.</b> 68 lines. Builtin registration + entry-point discovery via <code>importlib.metadata</code>. <code>get_backend(name)</code> for instance construction.</div></div>
-    <div class="fileref"><code>agent_backends/openclaw.py</code><div class="desc"><b><code>OpenClawBackend</code>.</b> 412 lines. The reference bridge implementation. <code>AgentResult</code> + <code>AgentToolCall</code> dataclasses, Redis stream subscription, ASSISTANT_DONE reconciliation, threading-local request state.</div></div>
-    <div class="fileref"><code>agent_backends/claude_code.py</code><div class="desc"><b><code>ClaudeCodeBackend</code>.</b> 37 lines. Inherits OpenClaw; overrides <code>_resolve_session_key</code> for bot+user routing keys. Routes to <code>claude-code-bridge</code>.</div></div>
+    <div class="fileref"><code>agent_bridge/</code><div class="desc"><b>The generic transport package.</b> <code>AgentEvent</code>, <code>AgentEventKind</code>, <code>EventStore</code>, <code>RedisPublisher</code>, <code>RedisSubscriber</code>, <code>SessionQueue</code>. Tables: <code>agent_events</code>, <code>agent_runs</code>, <code>agent_session_state</code>. Redis streams: <code>agent:{events,run,commands,history,rpc}</code>.</div></div>
+    <div class="fileref"><code>agent_backends/agent_bridge.py</code><div class="desc"><b><code>AgentBridgeBackend</code>.</b> ~412 lines. The shared bridge implementation that all three integrations subclass. Owns the <code>chat.send</code> dispatch, <code>AgentResult</code> + <code>AgentToolCall</code> dataclasses, ASSISTANT_DONE reconciliation, request-local state, abort handling.</div></div>
+    <div class="fileref"><code>agent_backends/openclaw.py</code><div class="desc"><b><code>OpenClawBackend</code>.</b> ~30 lines. Sets <code>name = "openclaw"</code>; resolves the routing key from the bot's <code>agent_backend_config.session_key</code>. Routes to <code>openclaw-bridge</code>.</div></div>
+    <div class="fileref"><code>agent_backends/claude_code.py</code><div class="desc"><b><code>ClaudeCodeBackend</code>.</b> 37 lines. Inherits <code>AgentBridgeBackend</code>; routes by <code>{bot_id}:{user_id}</code> so each user gets an independent Claude session. Routes to <code>claude-code-bridge</code>.</div></div>
     <div class="fileref"><code>agent_backends/codex.py</code><div class="desc"><b><code>CodexBackend</code>.</b> 41 lines. Same shape as Claude Code. Routes to <code>codex-bridge</code>. SDK <code>thread_id</code> management is on the bridge side.</div></div>
     <div class="fileref"><code>agent_backends/prompts.py</code><div class="desc"><b>Backend prompt fragments.</b> 498 lines. Static system-prompt overlays for each backend — tool-use guidance specific to the SDK's tool catalog.</div></div>
     <div class="fileref"><code>clients/agent_backend_client.py</code><div class="desc"><b><code>AgentBackendClient</code>.</b> 229 lines. Lives under <code>clients/</code> but is the LLMClient face of this subsystem. Wraps a backend as a normal client so the pipeline never knows the difference.</div></div>

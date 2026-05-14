@@ -41,7 +41,7 @@
   <h2 id="why"><span class="num">01</span> What OpenClaw is, briefly.</h2>
   <p>OpenClaw is an agent host — a separate process on a separate machine that runs long-lived agent sessions with tool access, multi-model routing, and a gateway WebSocket. From <code>llm-bawt</code>'s perspective it's a black box: send <code>chat.send</code>, receive a stream of <code>agent.*</code> WebSocket events, persist nothing locally beyond what the bridge re-emits. The gateway owns the agent's actual conversation history; <code>llm-bawt</code>'s memory layer is a parallel store keyed off the same session_key.</p>
 
-  <p>Practically: a session_key like <code>agent:loopy:main</code> lives on the gateway; the bridge subscribes to it on startup, listens for events, and exposes a <code>chat.send</code> path the API can invoke. The <code>OpenClawBackend</code> in the main app is the API-facing half of that round-trip.</p>
+  <p>Practically: a session_key like <code>agent:loopy:main</code> lives on the gateway; the bridge subscribes to it on startup, listens for events, and exposes a <code>chat.send</code> path the API can invoke. The <code>AgentBridgeBackend</code> in the main app is the API-facing half of that round-trip.</p>
 
   <h2 id="topology"><span class="num">02</span> Topology.</h2>
 
@@ -50,7 +50,7 @@
     <pre style="font-family:var(--mono);font-size:11.5px;line-height:1.5;color:var(--muted);margin:0;white-space:pre">
 ┌──────────────────────────────────────────────────┐
 │  llm-bawt-app (FastAPI)                          │
-│  OpenClawBackend.stream_raw(prompt, config)      │
+│  AgentBridgeBackend.stream_raw(prompt, config)      │
 │  → send_command(backend="openclaw",              │
 │       session_key="agent:loopy:main", message)   │
 └─────────────────────┬────────────────────────────┘
@@ -179,7 +179,7 @@ v3|deviceId|client_id|client_mode|role|scopes|signed_at_ms|token|nonce|platform|
   <p>That same object is imported wholesale by the Claude Code and Codex bridges — <code>from agent_bridge.session_queue import SessionQueue</code> — and used identically. The lock is what guarantees per-session ordering across all three.</p>
 
   <h2 id="bot-routing"><span class="num">09</span> Session keys, bot routing, and the active path.</h2>
-  <p>The <code>OpenClawBackend.stream_raw()</code> active path lives in the main API process, not the bridge. The backend's session-key resolver is the simplest of the three:</p>
+  <p>The <code>AgentBridgeBackend.stream_raw()</code> active path lives in the main API process, not the bridge. The backend's session-key resolver is the simplest of the three:</p>
 
   <pre style="font-family:var(--mono);font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:14px 16px;white-space:pre-wrap;margin:14px 0">
 def _resolve_session_key(self, config: dict) -> str:

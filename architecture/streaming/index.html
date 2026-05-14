@@ -161,7 +161,7 @@
   </ul>
 
   <h2 id="fanout"><span class="num">08</span> The in-process <code>FanoutHub</code>.</h2>
-  <p>Before Redis, llm-bawt used an in-process <code>FanoutHub</code> (<code>openclaw_fanout.py</code>) — a dict of <code>asyncio.Queue</code> subscribers per session. It still exists for the in-process WebSocket gateway path: the WS client receives an event, persists it via the store, and broadcasts to local subscribers. With Redis enabled, that path is mostly inert; the main app subscribes via <code>RedisSubscriber</code> instead.</p>
+  <p>Before Redis, llm-bawt used an in-process <code>FanoutHub</code> (<code>agent_bridge_fanout.py</code>) — a dict of <code>asyncio.Queue</code> subscribers per session. It still exists for the in-process WebSocket gateway path: the WS client receives an event, persists it via the store, and broadcasts to local subscribers. With Redis enabled, that path is mostly inert; the main app subscribes via <code>RedisSubscriber</code> instead.</p>
   <p>The FanoutHub is still useful for tests and for the rare case where someone runs llm-bawt without Redis. Both paths produce the same <code>AgentEvent</code>s, so the consumers don't care which is wired up.</p>
 
   <h2 id="tokens"><span class="num">09</span> Token accounting passes through too.</h2>
