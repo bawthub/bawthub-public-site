@@ -283,7 +283,7 @@
 
   /* RESPONSIVE */
   @media(max-width:980px){
-    .hero{grid-template-columns:1fr;gap:38px}
+    .hero{grid-template-columns:1fr;gap:38px;padding-bottom:8px}
     .nav-links{display:none}
     .bots{grid-template-columns:repeat(2,1fr)}
     .vs{grid-template-columns:1fr}
@@ -302,7 +302,11 @@
   @media(max-width:600px){
     .bots,.feat,.gallery{grid-template-columns:1fr}
     .shell{padding:20px 18px 60px}
-    .nav{margin-bottom:36px}
+    .nav{margin-bottom:36px;gap:12px}
+    .nav-src{display:none}
+    .nav-right{gap:0}
+    .cta{padding:9px 15px;font-size:13px}
+    .nav .cta{box-shadow:0 6px 18px rgba(79,121,255,.28)}
     .section{margin:80px 0}
     .bet{margin:80px 0}
     .quote{padding:34px 24px;margin:80px auto}
@@ -980,8 +984,8 @@
   <div class="privnote">
     <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
     <div>
-      <h4>Still private — and honest about it.</h4>
-      <p>A single-user, self-hosted system under active development. The code is on GitHub; the running instance is <b>a private box that wrote this line too</b>. Not open to the public yet — on purpose.</p>
+      <h4>Open backend, private everything else.</h4>
+      <p>The <b>llm-bawt backend is open on GitHub</b>. The BawtHub frontend and the running instance stay private — a single-user, self-hosted system <b>that wrote this line too</b>. Under active development, on purpose.</p>
     </div>
   </div>
 
@@ -992,9 +996,8 @@
     <div class="f-links">
       <a href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        llm-bawt
+        llm-bawt · backend
       </a>
-      <a href="https://github.com/zenoran/bawthub" target="_blank" rel="noopener">bawthub</a>
       <a href="/architecture/">Architecture</a>
       <a href="/story.html">Story</a>
     </div>
