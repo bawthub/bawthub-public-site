@@ -354,11 +354,17 @@
   agents build runs on the host; BawtHub is the cockpit, not the user's
   prod host.
 
-  THE DIFFERENTIATED INTERSECTION (nobody else ships all six):
+  THE DIFFERENTIATED INTERSECTION (the bet is the combination, not any one):
   self-hosted · multi-agent-sharing-one-workspace · persistent-24/7 ·
   chat-native · built on real coding harnesses · with LIVE observability.
   Drop any one and it collapses into Devin / OpenHands / Cursor / Coder.
-  Live observability is the one nobody has.
+  Observability isn't unique because it exists — every harness emits the
+  guts. It's unique because BawtHub puts it front and center instead of
+  burying it. First-hand: Copilot collapses the chat and makes you keep a
+  console open; the Claude Code TUI needs verbose toggled on, which floods
+  the screen and barely lets you look back. Same top-notch guts, buried UX.
+  BawtHub renders those streams as tool-type cards with the chat as the
+  focal point. The UI is the differentiator, not the data.
 
   PERSONA CLARITY (don't blur on the site):
   1. BawtHub-developer (Nick) — recursive/self-hosting; special case of 2.
@@ -485,26 +491,26 @@
   <div class="bet" id="observe">
     <div class="tag">// the contrarian bet</div>
     <h2><span class="hide">Most agent tools hide the work.</span><br/><span class="show">We show it.</span></h2>
-    <p class="punch">Spinner, "thinking…", a clean final diff. The industry hides the guts for demo-comfort. We bet the opposite: <em>the process is the product.</em></p>
+    <p class="punch">The good harnesses have world-class guts — the Claude Code SDK is the best in the business. But you watch them through a collapsed chat you babysit with a console open, or a <code>--verbose</code> flood you can't scroll back through. The guts are great; the <em>surface</em> makes them un-watchable. We take those same guts and render them so you can actually sit and watch: <em>the process is the product.</em></p>
 
     <div class="vs">
       <div class="vs-col them">
-        <h3>Everywhere else</h3>
-        <div class="sub">Trust me, look away</div>
+        <h3>The tools I actually use</h3>
+        <div class="sub">Great guts, un-watchable surface</div>
         <ul>
-          <li><span class="mk">✕</span> <span>A <b>spinner and a final diff</b>. The reasoning trail is collapsed, truncated, or gone.</span></li>
-          <li><span class="mk">✕</span> <span>Tool calls run <b>off-screen</b>. You find out what happened after it's done — if you can.</span></li>
-          <li><span class="mk">✕</span> <span>You steer by <b>re-prompting</b> a black box and hoping the next attempt is better.</span></li>
-          <li><span class="mk">✕</span> <span>When your machine sleeps, <b>the agent dies</b>. Hosted, single session, closed.</span></li>
+          <li><span class="mk">✕</span> <span><b>Copilot</b> tries to show tool calls inline — but it's quick flashes and collapsed views in an embedded terminal. To really see what it did, you keep a <b>separate console open</b>. You can't sit and watch.</span></li>
+          <li><span class="mk">✕</span> <span>Run more than one agent and they <b>fight over the same terminal</b> — output interleaves into noise.</span></li>
+          <li><span class="mk">✕</span> <span>The <b>Claude Code TUI</b> has top-notch guts, but you toggle <code>--verbose</code> to see them, it floods the screen for a single command, and <b>looking back</b> at what happened is painful.</span></li>
+          <li><span class="mk">✕</span> <span>Session-bound: end it or sleep the machine and <b>the trail is gone.</b></span></li>
         </ul>
       </div>
       <div class="vs-col us">
         <h3>BawtHub</h3>
-        <div class="sub">Watch, and correct</div>
+        <div class="sub">Same guts, made watchable</div>
         <ul>
-          <li><span class="mk">✓</span> <span>Every tool call is a <b>card with its result</b> — command, args, output, live. Nothing collapsed by default.</span></li>
-          <li><span class="mk">✓</span> <span><b>Latency, token cost, model, +/− diff</b> on the same row. The receipts, not a summary.</span></li>
-          <li><span class="mk">✓</span> <span>You catch the wrong turn <b>while it's happening</b> and correct it — steering by watching.</span></li>
+          <li><span class="mk">✓</span> <span>Built on the <b>same real harnesses</b> (Claude Code SDK, Codex) — then their streams render as <b>tool-type cards</b>, with the chat as the focal point. Nothing collapsed by default.</span></li>
+          <li><span class="mk">✓</span> <span><b>Latency, token cost, model, +/− diff</b> on the same row. The receipts, not a summary — and they're still there to <b>scroll back</b> through later.</span></li>
+          <li><span class="mk">✓</span> <span>Many agents, <b>one board</b> — each turn in its own lane instead of fighting over a terminal.</span></li>
           <li><span class="mk">✓</span> <span>It's <b>your box</b>. Self-hosted, multi-agent, and it keeps working while you're away.</span></li>
         </ul>
       </div>
@@ -807,7 +813,7 @@
         <div class="ix"><span class="b">03</span><span class="t">Persistent <span>· running 24/7, not per-session</span></span></div>
         <div class="ix"><span class="b">04</span><span class="t">Chat-native <span>· steered in plain language</span></span></div>
         <div class="ix"><span class="b">05</span><span class="t">Real harnesses <span>· Claude Code, Codex — not an LLM in a costume</span></span></div>
-        <div class="ix crown"><span class="b">06</span><span class="t">Live observability <span>· the one nobody has</span></span></div>
+        <div class="ix crown"><span class="b">06</span><span class="t">Live observability <span>· front and center, not buried in a console</span></span></div>
       </div>
       <div class="drop">
         <div class="dr hd"><div class="l">Drop…</div><div class="r">…and it collapses into</div></div>
@@ -816,7 +822,7 @@
         <div class="dr"><div class="l">persistent / 24-7</div><div class="r"><b>Cursor background agents</b></div></div>
         <div class="dr"><div class="l">the real harness</div><div class="r"><b>a LangChain-flavored "agent"</b></div></div>
         <div class="dr"><div class="l">chat-native</div><div class="r"><b>Coder / Gitpod / Codespaces</b></div></div>
-        <div class="dr crown"><div class="l">live observability</div><div class="r">everyone — this is the one nobody has</div></div>
+        <div class="dr crown"><div class="l">live observability</div><div class="r">everywhere else it's <b>buried</b> — a console you keep open, a verbose flag you toggle on</div></div>
       </div>
     </div>
   </section>
