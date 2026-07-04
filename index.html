@@ -300,8 +300,23 @@
     .drop .dr .l{border-right:none;border-bottom:1px solid var(--line)}
     .privnote{flex-direction:column;gap:12px}
   }
+  /* ZOOM AFFORDANCE + LIGHTBOX */
+  .shot,.gtile{cursor:zoom-in}
+  .shot img,.gtile img,.hero-shot video{cursor:zoom-in}
+  .lb{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:32px;background:rgba(3,7,14,.86);backdrop-filter:blur(8px);opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s}
+  .lb.open{opacity:1;visibility:visible}
+  .lb-stage{position:relative;max-width:min(1400px,94vw);max-height:90vh;display:flex;flex-direction:column;transform:scale(.97);transition:transform .22s cubic-bezier(.2,.7,.2,1)}
+  .lb.open .lb-stage{transform:scale(1)}
+  .lb-frame{border-radius:14px;overflow:hidden;border:1px solid var(--line-strong);box-shadow:0 40px 120px rgba(0,0,0,.7);background:#070d18;line-height:0}
+  .lb-frame img,.lb-frame video{display:block;max-width:100%;max-height:82vh;width:auto;height:auto;object-fit:contain}
+  .lb-cap{margin-top:14px;text-align:center;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .lb-close{position:absolute;top:-14px;right:-14px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line-strong);background:rgba(12,22,40,.95);color:var(--text);font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;transition:transform .15s,background .15s}
+  .lb-close:hover{transform:scale(1.08);background:rgba(30,44,72,.98)}
+  .lb-hint{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);font-size:12px;color:var(--dim);white-space:nowrap}
+  @media(max-width:600px){.lb{padding:16px}.lb-close{top:-8px;right:-8px}}
   @media(prefers-reduced-motion:reduce){
     *{animation:none!important;scroll-behavior:auto}
+    .lb,.lb-stage{transition:none}
   }
 </style>
 </head>
@@ -901,5 +916,66 @@
   </div>
 
 </div>
+
+<!-- LIGHTBOX (vanilla, no deps) — opens any .shot / .gtile media full-screen -->
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Media viewer" hidden>
+  <div class="lb-stage">
+    <button class="lb-close" id="lbClose" aria-label="Close viewer">&times;</button>
+    <div class="lb-frame" id="lbFrame"></div>
+    <div class="lb-cap" id="lbCap"></div>
+    <div class="lb-hint">Esc or click outside to close</div>
+  </div>
+</div>
+<script>
+(function(){
+  var lb=document.getElementById('lb'),frame=document.getElementById('lbFrame'),
+      cap=document.getElementById('lbCap'),closeBtn=document.getElementById('lbClose'),lastFocus=null;
+
+  // Make every media container keyboard-openable.
+  [].forEach.call(document.querySelectorAll('.shot,.gtile'),function(c){
+    c.setAttribute('tabindex','0');
+    c.setAttribute('role','button');
+    var m=c.querySelector('img,video');
+    c.setAttribute('aria-label','View full screen'+(m&&m.alt?': '+m.alt:''));
+  });
+
+  function captionFor(c,m){
+    var t=c.querySelector('.shot-tag,figcaption');
+    return t?t.textContent.trim():(m.getAttribute('alt')||'');
+  }
+  function open(c){
+    var m=c.querySelector('img,video'); if(!m) return;
+    lastFocus=document.activeElement; frame.innerHTML='';
+    var el;
+    if(m.tagName==='VIDEO'){
+      el=m.cloneNode(true); el.removeAttribute('poster');
+      el.controls=true; el.autoplay=true; el.loop=true; el.muted=true; el.playsInline=true;
+    }else{
+      el=document.createElement('img'); el.src=m.currentSrc||m.src; el.alt=m.alt||'';
+    }
+    frame.appendChild(el);
+    cap.textContent=captionFor(c,m);
+    lb.hidden=false; void lb.offsetWidth; lb.classList.add('open');
+    document.body.style.overflow='hidden'; closeBtn.focus();
+  }
+  function close(){
+    lb.classList.remove('open'); document.body.style.overflow='';
+    setTimeout(function(){ lb.hidden=true; frame.innerHTML=''; if(lastFocus)lastFocus.focus(); },220);
+  }
+  document.addEventListener('click',function(e){
+    var c=e.target.closest('.shot,.gtile');
+    if(c&&!lb.contains(c)) open(c);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&!lb.hidden){ close(); return; }
+    if((e.key==='Enter'||e.key===' ')){
+      var c=e.target.closest&&e.target.closest('.shot,.gtile');
+      if(c&&!lb.contains(c)){ e.preventDefault(); open(c); }
+    }
+  });
+  closeBtn.addEventListener('click',close);
+  lb.addEventListener('click',function(e){ if(e.target===lb) close(); });
+})();
+</script>
 </body>
 </html>
