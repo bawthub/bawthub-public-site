@@ -20,6 +20,8 @@
 #   -o, --out DIR     output directory (default: ./cropped)
 #       --webm        also emit a VP9/WebM alongside the MP4
 #       --crf N       x264 CRF quality, lower = better (default: 23)
+#       --width N     downscale to max width N px (keeps aspect; only if wider).
+#                     Use for hi-res phone exports (CapCut/native) with no bars.
 #       --limit N     cropdetect black threshold, lower = stricter (default: 24)
 #       --axis MODE   auto | h | v | none  (default: auto)
 #       --no-poster   skip the poster JPG
@@ -35,12 +37,13 @@ WEBM=0
 CRF=23
 LIMIT=24
 AXIS="auto"
+MAXW=""
 POSTER=1
 INPUTS=()
 
 die() { echo "✗ $*" >&2; exit 1; }
 
-usage() { sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -48,6 +51,7 @@ while [ $# -gt 0 ]; do
     --webm) WEBM=1; shift ;;
     --crf) CRF="$2"; shift 2 ;;
     --limit) LIMIT="$2"; shift 2 ;;
+    --width) MAXW="$2"; shift 2 ;;
     --axis) AXIS="$2"; shift 2 ;;
     --no-poster) POSTER=0; shift ;;
     -h|--help) usage 0 ;;
@@ -112,11 +116,17 @@ for src in "${FILES[@]}"; do
     fi
   fi
 
-  vf_mp4="$CROP"; [ -n "$vf_mp4" ] && vf_mp4="-vf $vf_mp4"
+  # filter chain: optional crop, then optional downscale to --width (only if wider)
+  filt="$CROP"
+  if [ -n "$MAXW" ]; then
+    ew="$W"; if [ -n "$CROP" ]; then ew="${CROP#crop=}"; ew="${ew%%:*}"; fi
+    if [ "$ew" -gt "$MAXW" ]; then filt="${filt:+$filt,}scale=${MAXW}:-2"; fi
+  fi
+  vf_mp4=""; [ -n "$filt" ] && vf_mp4="-vf $filt"
   aflags=(-an); [ -n "$HAS_AUDIO" ] && aflags=(-c:a copy)   # retain audio untouched
   outmp4="$OUT/$name.mp4"
 
-  echo "→ $base  (${W}x${H}${HAS_AUDIO:+, audio}${CROP:+  ${CROP})}"
+  echo "→ $base  (${W}x${H}${HAS_AUDIO:+, audio})${filt:+  ${filt}}"
   # shellcheck disable=SC2086
   ffmpeg -hide_banner -y -i "$src" $vf_mp4 \
     -c:v libx264 -crf "$CRF" -preset slow -pix_fmt yuv420p \
