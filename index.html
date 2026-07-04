@@ -143,6 +143,13 @@
   .gtile img{display:block;width:100%;height:230px;object-fit:cover;object-position:top left}
   .gtile figcaption{padding:13px 16px;font-size:12.5px;color:var(--muted);font-family:var(--mono);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px}
   .gtile figcaption::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent,var(--cyan));box-shadow:0 0 8px var(--accent,var(--cyan))}
+  .phones{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+  .ptile{position:relative;margin:0;border-radius:24px;overflow:hidden;border:1px solid var(--line-strong);background:#000;box-shadow:0 24px 70px rgba(0,0,0,.5);cursor:zoom-in;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .ptile:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--accent,var(--cyan)) 55%,var(--line-strong));box-shadow:0 30px 84px rgba(0,0,0,.6)}
+  .ptile video{display:block;width:100%;aspect-ratio:496/1080;object-fit:cover;background:#000}
+  .ptile figcaption{padding:12px 14px;font-size:11.5px;line-height:1.5;color:var(--muted);border-top:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .ptile figcaption b{color:var(--text);font-weight:600}
+  .ptile .aud{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:10px;color:#cde0ff;background:rgba(5,10,19,.82);border:1px solid var(--line);border-radius:7px;padding:3px 7px;backdrop-filter:blur(6px)}
   .split{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
   .split.rev{grid-template-columns:.85fr 1.15fr}
   .split .copy h3{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px}
@@ -285,6 +292,7 @@
     .layer{grid-template-columns:1fr;gap:12px}
     .split,.split.rev,.why-grid{grid-template-columns:1fr;gap:28px}
     .whatis{grid-template-columns:1fr}
+    .phones{grid-template-columns:repeat(3,1fr)}
     .bet{padding:44px 28px}
   }
   @media(max-width:600px){
@@ -300,10 +308,11 @@
     .drop .dr{grid-template-columns:1fr}
     .drop .dr .l{border-right:none;border-bottom:1px solid var(--line)}
     .privnote{flex-direction:column;gap:12px}
+    .phones{grid-template-columns:repeat(2,1fr);gap:12px}
   }
   /* ZOOM AFFORDANCE + LIGHTBOX */
   .shot,.gtile{cursor:zoom-in}
-  .shot img,.gtile img,.hero-shot video{cursor:zoom-in}
+  .shot img,.gtile img,.hero-shot video,.ptile video{cursor:zoom-in}
   .lb{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:32px;background:rgba(3,7,14,.86);backdrop-filter:blur(8px);opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s}
   .lb.open{opacity:1;visibility:visible}
   .lb-stage{position:relative;max-width:min(1400px,94vw);max-height:90vh;display:flex;flex-direction:column;transform:scale(.97);transition:transform .22s cubic-bezier(.2,.7,.2,1)}
@@ -689,6 +698,53 @@
     </div>
   </section>
 
+  <!-- MOBILE / DEVELOP FROM YOUR PHONE -->
+  <section class="section" id="mobile">
+    <div class="section-head">
+      <div class="kicker">Not just a desktop app</div>
+      <h2>Close the laptop. <em>Keep shipping</em> — from your phone.</h2>
+      <p class="lede2">Same app, same guts, fully responsive. Start on desktop, close it, go walk the dog — then check progress, read tool calls, and push fixes from the device in your pocket. Not a stripped-down companion view; the whole rich environment. All real captures.</p>
+    </div>
+    <div class="phones">
+      <figure class="ptile" style="--accent:var(--cyan)">
+        <video muted loop playsinline preload="none" poster="/videos/turn-mobile-poster.jpg" aria-label="A live turn on mobile: Caid streaming a response with scrollable, resizable tool cards.">
+          <source src="/videos/turn-mobile.webm" type="video/webm"/>
+          <source src="/videos/turn-mobile.mp4" type="video/mp4"/>
+        </video>
+        <figcaption><b>A live turn.</b> Watch Caid stream a response, scroll back through tool history mid-stream, resize cards for detail or brevity — max-width chat, maximum information.</figcaption>
+      </figure>
+      <figure class="ptile" style="--accent:var(--teal)">
+        <video muted loop playsinline preload="none" poster="/videos/attach-hmr-mobile-poster.jpg" aria-label="Screenshotting a padding bug on mobile, pasting it into chat, and watching the fix apply live.">
+          <source src="/videos/attach-hmr-mobile.webm" type="video/webm"/>
+          <source src="/videos/attach-hmr-mobile.mp4" type="video/mp4"/>
+        </video>
+        <figcaption><b>Screenshot → paste → fixed.</b> Grab a padding bug on your phone, drop the image into chat, say "fix it" — and watch the live HMR update land on screen.</figcaption>
+      </figure>
+      <figure class="ptile" style="--accent:var(--violet)">
+        <video muted loop playsinline preload="none" poster="/videos/sub-agents-poster.jpg" aria-label="Two agents in one turn, sub-agent tool calls grouped under the main prompt, cards resized.">
+          <source src="/videos/sub-agents.webm" type="video/webm"/>
+          <source src="/videos/sub-agents.mp4" type="video/mp4"/>
+        </video>
+        <figcaption><b>Sub-agents, grouped.</b> Two agents in one turn; sub-agent tool calls fold under the main agent's prompt. Resize the cards bigger or smaller as you follow along.</figcaption>
+      </figure>
+      <figure class="ptile" style="--accent:var(--gold)">
+        <video muted loop playsinline preload="none" poster="/videos/ask-question-poster.jpg" aria-label="Asking a bot to re-pose a question, spawning a full-screen choice selector via the AskQuestion tool.">
+          <source src="/videos/ask-question.webm" type="video/webm"/>
+          <source src="/videos/ask-question.mp4" type="video/mp4"/>
+        </video>
+        <figcaption><b>Interactive tool UI.</b> Ask a bot to re-pose a question and the AskQuestion tool spawns a full-screen choice selector — real UI on your phone, not just text.</figcaption>
+      </figure>
+      <figure class="ptile" style="--accent:var(--emerald)" data-audio>
+        <video muted loop playsinline preload="none" poster="/videos/chat-voice-mobile-poster.jpg" aria-label="Asking Nova a question and hearing the answer via TTS, then switching from Grok to local Moshi.">
+          <source src="/videos/chat-voice-mobile.webm" type="video/webm"/>
+          <source src="/videos/chat-voice-mobile.mp4" type="video/mp4"/>
+        </video>
+        <span class="aud">🔊 audio</span>
+        <figcaption><b>It talks back.</b> Ask Nova a question and hear the answer read via Grok TTS — then switch to fully-local Moshi and follow up. Tap for sound.</figcaption>
+      </figure>
+    </div>
+  </section>
+
   <!-- STACK -->
   <section class="section" id="stack">
     <div class="section-head">
@@ -940,7 +996,7 @@
       cap=document.getElementById('lbCap'),closeBtn=document.getElementById('lbClose'),lastFocus=null;
 
   // Make every media container keyboard-openable.
-  [].forEach.call(document.querySelectorAll('.shot,.gtile'),function(c){
+  [].forEach.call(document.querySelectorAll('.shot,.gtile,.ptile'),function(c){
     c.setAttribute('tabindex','0');
     c.setAttribute('role','button');
     var m=c.querySelector('img,video');
@@ -957,7 +1013,8 @@
     var el;
     if(m.tagName==='VIDEO'){
       el=m.cloneNode(true); el.removeAttribute('poster');
-      el.controls=true; el.autoplay=true; el.loop=true; el.muted=true; el.playsInline=true;
+      el.controls=true; el.autoplay=true; el.loop=true; el.playsInline=true;
+      el.muted=!c.hasAttribute('data-audio');  // voice demo keeps sound in full-screen
     }else{
       el=document.createElement('img'); el.src=m.currentSrc||m.src; el.alt=m.alt||'';
     }
@@ -971,18 +1028,32 @@
     setTimeout(function(){ lb.hidden=true; frame.innerHTML=''; if(lastFocus)lastFocus.focus(); },220);
   }
   document.addEventListener('click',function(e){
-    var c=e.target.closest('.shot,.gtile');
+    var c=e.target.closest('.shot,.gtile,.ptile');
     if(c&&!lb.contains(c)) open(c);
   });
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'&&!lb.hidden){ close(); return; }
     if((e.key==='Enter'||e.key===' ')){
-      var c=e.target.closest&&e.target.closest('.shot,.gtile');
+      var c=e.target.closest&&e.target.closest('.shot,.gtile,.ptile');
       if(c&&!lb.contains(c)){ e.preventDefault(); open(c); }
     }
   });
   closeBtn.addEventListener('click',close);
   lb.addEventListener('click',function(e){ if(e.target===lb) close(); });
+
+  // Phone-tile videos: autoplay only while visible (5 at once would jank);
+  // respect reduced-motion by leaving them paused on their poster.
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(!reduce&&'IntersectionObserver'in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        var v=en.target;
+        if(en.isIntersecting){ if(v.play) v.play().catch(function(){}); }
+        else if(v.pause){ v.pause(); }
+      });
+    },{threshold:0.35});
+    [].forEach.call(document.querySelectorAll('.ptile video'),function(v){ io.observe(v); });
+  }
 })();
 </script>
 </body>
