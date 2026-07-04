@@ -4,10 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Frontend · BawtHub · Architecture</title>
-<meta name="description" content="The Next.js 16 frontend — directory structure, route groups, Zustand stores, the per-bot chat store, the unified SSE event bus, and how the proxy floor consumes llm-bawt." />
+<meta name="description" content="The Vite + React 19 frontend and its Hono API — directory structure, layout-group naming, Zustand stores, the per-bot chat store, the unified SSE event bus, and how the proxy floor consumes llm-bawt." />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-<link rel="stylesheet" href="/architecture/assets/site.css?v=4" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=5" />
 </head>
 <body>
 
@@ -29,17 +29,17 @@
 
   <div class="page-head">
     <div class="kicker"><span class="dot"></span> BawtHub · frontend</div>
-    <h1 class="page-title">A Next.js app pretending to be <em>three apps</em>.</h1>
-    <p class="lede">The BawtHub frontend is a single Next.js 16 application with two route-group layouts (full-chrome dashboard vs. edge-to-edge surfaces), a per-bot Zustand chat store, a windowed SSE event bus, and roughly fifty API routes that mostly forward to llm-bawt. The interesting parts aren't the components — they're the way state is split between the URL, localStorage, Postgres-via-Prisma, and a Redis-backed event stream upstream.</p>
+    <h1 class="page-title">A Vite SPA pretending to be <em>three apps</em>.</h1>
+    <p class="lede">The BawtHub frontend is a single Vite + React 19 single-page app (routed by React Router v8) with two nested layout shells (full-chrome dashboard vs. edge-to-edge surfaces), a per-bot Zustand chat store, a windowed SSE event bus, and a Hono API of roughly fifty routes that mostly forward to llm-bawt. The interesting parts aren't the components — they're the way state is split between the URL, localStorage, Postgres-via-Prisma, and a Redis-backed event stream upstream.</p>
     <div class="meta">
-      <span><b>Stack:</b> Next.js 16.1.6 · React 19.2 · Tailwind 4.2 · TypeScript 5</span>
-      <span><b>State:</b> Zustand 5 · TanStack Query 5 · Prisma 7</span>
-      <span><b>Dev:</b> webpack (not Turbopack)</span>
+      <span><b>Stack:</b> Vite 8 · React 19 · React Router v8 · Tailwind 4 · TypeScript</span>
+      <span><b>API:</b> Hono (TypeScript) · <b>State:</b> Zustand · TanStack Query · Prisma 7</span>
+      <span><b>Note:</b> migrated off Next.js — the <code>(group)</code> dir names are kept-from-Next convention, not framework routing</span>
     </div>
   </div>
 
-  <h2 id="layout"><span class="num">01</span> Two route groups.</h2>
-  <p>App Router gives you route groups <code>(name)</code> that affect layout inheritance without changing URLs. BawtHub uses two:</p>
+  <h2 id="layout"><span class="num">01</span> Two layout shells.</h2>
+  <p>The directory names in <code>(parens)</code> are a convention carried over from the app's Next.js days — they're <em>not</em> framework routing anymore. Under React Router v8 they're plain nested-layout components that wrap groups of pages without changing URLs. BawtHub uses two:</p>
 
   <table class="spec">
     <thead><tr><th>Group</th><th>URL prefix</th><th>Layout</th><th>Pages</th></tr></thead>
@@ -74,13 +74,13 @@
 ├── avatar/                     // R3F model loaders, lip sync, animations
 ├── tools/                      // shared tool helpers (api.ts, sub-nav)
 ├── unraid/                     // dashboard component
-├── agents/                     // task system server actions
+├── (dashboard)/tasks/          // task system UI (relay, projects, tasks)
 ├── (app)/(dashboard)/...       // dashboard pages
 ├── (app)/(fullscreen)/...      // chat, voice, avatar pages
-└── api/                        // ~50 Next.js API routes</pre>
+└── (server/routes/)            // ~50 Hono API routes (in frontend/server/, not the client bundle)</pre>
   </div>
 
-  <p>This isn't an accident. Co-locating <code>useChatStore.ts</code> next to <code>ChatUI.tsx</code> means a refactor of chat state doesn't touch a global <code>store/</code> directory. The trade-off is that <code>ChatUI.tsx</code> is ~3,500 lines — handling message rendering, streaming, agent turn tracking, tool activity display, and the unified composer popup all in one place. The team has consciously chosen "one big file, easy to navigate" over a fan of forty smaller components.</p>
+  <p>This isn't an accident. Co-locating <code>useChatStore.ts</code> next to <code>ChatUI.tsx</code> means a refactor of chat state doesn't touch a global <code>store/</code> directory. <code>ChatUI.tsx</code> itself is now a ~400-line <b>pure orchestrator</b>: the heavy logic lives in concern directories under <code>chat/</code> — <code>history/</code>, <code>turns/</code>, <code>activity/</code>, <code>stream/</code>, <code>viewport/</code> — kept honest by an ESLint <code>max-lines=500</code> budget. (It used to be one ~3,500-line file; the split happened as the observability rendering grew.)</p>
 
   <h2 id="stores"><span class="num">03</span> Zustand: three stores.</h2>
   <p>BawtHub has three Zustand stores, each with a tight scope:</p>
@@ -215,12 +215,12 @@
   <p>Tailwind 4.2 with CSS variables for theming. The look is a dark glass-morphism with cyan/violet/pink accents — <code>.glass-panel</code> is the workhorse: backdrop-blur, 1px border, subtle inner glow. Custom animations (<code>slide-up</code>, <code>fade-in</code>, <code>glow-pulse</code>, <code>shimmer</code>) live in <code>globals.css</code>. The font is Satoshi via <code>next/font/local</code>; Inter is the fallback for system stacks.</p>
 
   <h2 id="dev"><span class="num">10</span> The dev loop.</h2>
-  <p>The frontend container bind-mounts <code>./frontend</code> from the host and runs <code>next dev --webpack</code>. <code>CHOKIDAR_USEPOLLING</code> and <code>WATCHPACK_POLLING</code> are on so file events propagate through the bind mount even on filesystems where inotify doesn't traverse cleanly. Hot reload is <i>the</i> deploy path — there is no separate <code>make rebuild-prod</code> step in normal release flow. The <code>frontend-prod</code> snapshot profile exists only when you need a stable baked build to compare against.</p>
+  <p>The frontend container bind-mounts <code>./frontend</code> from the host and runs the Vite dev server alongside a <code>tsx watch</code> Hono process (<code>pnpm dev</code> = vite + tsx-watch server). File-polling is on so edits propagate through the bind mount even on filesystems where inotify doesn't traverse cleanly, and Vite HMR streams changes into the running page. On the dev surface (<code>dev.bawthub.com</code>) hot reload is <i>the</i> deploy path; the baked <code>frontend-prod</code> image is what canonical hosts serve and only changes on <code>make rebuild-prod</code>.</p>
 
   <h2 id="files"><span class="num">11</span> Key files.</h2>
   <div class="files">
     <div class="fileref"><code>frontend/src/app/BawtHub.tsx</code><div class="desc"><b>Voice orchestrator.</b> ~2,200 lines. WebSocket lifecycle, audio context setup, transcript state, health polling, error surfaces, voice-call wake-lock, and the bridge between audio output amplitude and the orb/avatar.</div></div>
-    <div class="fileref"><code>frontend/src/app/chat/ChatUI.tsx</code><div class="desc"><b>The chat surface.</b> ~3,500 lines. Message rendering, streaming reconciliation, agent turn tracking, inline tool activity, the unified composer popup (compact + desktop), markdown + code highlighting, image attachments, summaries toggle.</div></div>
+    <div class="fileref"><code>frontend/src/app/chat/ChatUI.tsx</code><div class="desc"><b>The chat surface.</b> A ~400-line orchestrator over the <code>chat/</code> concern dirs (history · turns · activity · stream · viewport). Message rendering, streaming reconciliation, agent turn tracking, inline tool-call cards, the unified composer popup (compact + desktop), markdown + code highlighting, image attachments.</div></div>
     <div class="fileref"><code>frontend/src/app/chat/useChatStore.ts</code><div class="desc"><b>Per-bot chat store.</b> The most consequential Zustand store in the app — messages, activity, turn-to-message routing, partial-response cache, SSE status.</div></div>
     <div class="fileref"><code>frontend/src/app/chat/useUnifiedEventStream.ts</code><div class="desc"><b>SSE consumer.</b> One subscription per bot, with window-scoped consumer ids to avoid Redis consumer-group races. Handles tool_start, tool_end, turn_complete.</div></div>
     <div class="fileref"><code>frontend/src/app/useAppStore.ts</code><div class="desc"><b>Global selections.</b> Bot, user, voice id, voice provider, avatar model — persisted to localStorage.</div></div>

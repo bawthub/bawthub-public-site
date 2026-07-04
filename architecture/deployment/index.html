@@ -7,7 +7,7 @@
 <meta name="description" content="The runtime topology. Two hosts on the home LAN (echo and Unraid), three Docker subnets, an openresty edge, Nginx Proxy Manager doing the actual routing, Authelia gating everything with auth, and bridge containers as sidecars for each agent backend." />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-<link rel="stylesheet" href="/architecture/assets/site.css?v=4" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=5" />
 </head>
 <body>
 
@@ -132,7 +132,7 @@
     <thead><tr><th>Container</th><th>Image</th><th>Purpose</th></tr></thead>
     <tbody>
       <tr><td><code>bawthub-traefik-1</code></td><td><code>traefik:v3.6.14</code></td><td>HTTP fan-out by Host header. Catches every public + LAN hostname for the frontend container.</td></tr>
-      <tr><td><code>bawthub-frontend-1</code></td><td><code>bawthub-frontend:latest</code></td><td>Next.js 15 app with hot-reload (<code>frontend/</code> bind-mounted). <em>This container is the deploy</em> — edit a file, HMR picks it up, users see it.</td></tr>
+      <tr><td><code>bawthub-frontend-1</code></td><td><code>bawthub-frontend:latest</code></td><td>Vite dev server (React 19 SPA + Hono API) with hot-reload (<code>frontend/</code> bind-mounted). <em>This container is the deploy</em> — edit a file, HMR picks it up, users see it.</td></tr>
       <tr><td><code>bawthub-backend-1</code></td><td><code>bawthub-backend:latest</code></td><td>Python FastAPI backend that owns the voice pipeline and a few /api/* routes that aren't frontend-owned. Bound to <code>/api</code> with <code>priority=100</code> as a catch-all.</td></tr>
       <tr><td><code>bawthub-tts-1</code> / <code>bawthub-stt-1</code></td><td><code>moshi-server-prebuilt</code></td><td>GPU-pinned moshi voice pipeline — TTS on port 8089, STT on 8090.</td></tr>
       <tr><td><code>llm-bawt-app</code></td><td><code>llm-bawt-app</code></td><td>FastAPI service on <code>:8642</code>, MCP server on <code>:8001</code>. Holds the bot configs, memory pipeline, and chat-completion router.</td></tr>

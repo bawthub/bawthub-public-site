@@ -4,10 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Overview · BawtHub · Architecture</title>
-<meta name="description" content="BawtHub is the surface on top of llm-bawt — a Next.js 16 web app plus a Python voice backend. One Traefik front door, two services, a 3D avatar, and every dashboard you need to operate a self-hosted multi-bot platform." />
+<meta name="description" content="BawtHub is the surface on top of llm-bawt — a Vite + React 19 web app (with a Hono API) plus a Python voice backend. One Traefik front door, two services, a 3D avatar, and every dashboard you need to operate a self-hosted multi-bot platform." />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-<link rel="stylesheet" href="/architecture/assets/site.css?v=4" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=5" />
 </head>
 <body>
 
@@ -32,14 +32,14 @@
     <h1 class="page-title">The face of the <em>bawts</em>.</h1>
     <p class="lede">BawtHub is everything that isn't the LLM. It's the web UI you talk to, the voice pipeline that turns microphone bytes into transcripts and TTS audio back into your speakers, the 3D avatar that mouths the words, and the dashboards for managing memory, bots, agents, Unraid, and a thousand small operational details. llm-bawt does the thinking. BawtHub is the body.</p>
     <div class="meta">
-      <span><b>Frontend:</b> Next.js 16.1.6 · React 19.2 · Tailwind 4.2</span>
+      <span><b>Frontend:</b> Vite 8 · React 19 · Hono API · Tailwind 4</span>
       <span><b>Backend:</b> Python 3.12 · FastAPI · fastrtc 0.0.23</span>
       <span><b>Front door:</b> Traefik on :80</span>
     </div>
   </div>
 
   <h2 id="split"><span class="num">01</span> Two services, one origin.</h2>
-  <p>BawtHub is split across two processes that share a hostname. A Next.js app handles every page, every REST proxy, and every Server-Sent Event stream to llm-bawt. A Python FastAPI service handles the realtime voice pipeline — microphone WebSocket in, Opus audio WebSocket out — plus a few admin endpoints that need direct access to the GPU services (TTS module switching, container restarts, Home Assistant pulls). Traefik routes between them on a per-path basis.</p>
+  <p>BawtHub is split across two processes that share a hostname. A Node process serves the Vite-built React SPA and runs a <b>Hono API</b> — every page, every REST proxy, and every Server-Sent Event stream to llm-bawt. A Python FastAPI service handles the realtime voice pipeline — microphone WebSocket in, Opus audio WebSocket out — plus a few admin endpoints that need direct access to the GPU services (TTS module switching, container restarts, Home Assistant pulls). Traefik routes between them on a per-path basis.</p>
 
   <div class="diagram">
     <div class="diagram-title">Runtime topology · single host, five containers</div>
@@ -50,7 +50,7 @@
       </div>
       <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:rgba(139,92,246,.05)">
         <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#d9c8ff;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 10px #8b5cf6"></span>Web</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill violet">frontend :3000</span><span class="pill">Next.js 16 + HMR</span><span class="pill"><code>/</code></span><span class="pill"><code>/api/chat/*</code></span><span class="pill"><code>/api/unraid/*</code></span><span class="pill"><code>/api/agents/*</code></span><span class="pill"><code>/api/avatar/*</code></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill violet">frontend :3000</span><span class="pill">Vite + HMR</span><span class="pill"><code>/</code></span><span class="pill"><code>/api/chat/*</code></span><span class="pill"><code>/api/unraid/*</code></span><span class="pill"><code>/api/agents/*</code></span><span class="pill"><code>/api/avatar/*</code></span></div>
       </div>
       <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:rgba(255,99,216,.05)">
         <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#ffd3f7;display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#ff63d8;box-shadow:0 0 10px #ff63d8"></span>Voice</div>
@@ -67,10 +67,10 @@
     </div>
   </div>
 
-  <p>The frontend is the orchestrator — every chat message, every memory query, every agent task dispatch goes through a Next.js API route that proxies to llm-bawt. The Python backend exists for one reason: <b>realtime audio doesn't belong in a Node.js process</b>. WebSockets to STT and TTS, Opus codec handling, and the turn-by-turn voice state machine all live in Python where <code>fastrtc</code>, <code>sphn</code>, and the Moshi msgpack protocol are first-class.</p>
+  <p>The frontend is the orchestrator — every chat message, every memory query, every agent task dispatch goes through a Hono API route that proxies to llm-bawt. The Python backend exists for one reason: <b>realtime audio doesn't belong in a Node.js process</b>. WebSockets to STT and TTS, Opus codec handling, and the turn-by-turn voice state machine all live in Python where <code>fastrtc</code>, <code>sphn</code>, and the Moshi msgpack protocol are first-class.</p>
 
   <h2 id="traefik"><span class="num">02</span> Traefik does the splitting.</h2>
-  <p>The compose stack runs a single Traefik instance on port 80. Path rules send <code>/api/chat/*</code>, <code>/api/unraid/*</code>, <code>/api/agents/*</code>, <code>/api/avatar/*</code>, <code>/api/notifications/*</code>, <code>/api/preferences/*</code>, <code>/api/llm/*</code>, <code>/api/docker/*</code>, <code>/api/bot-colors/*</code>, <code>/api/camera-presets/*</code>, <code>/api/uploads/*</code>, <code>/api/media/*</code>, and <code>/api/clog</code> to the Next.js container with router priority 200. A backend catch-all on <code>PathPrefix(/api)</code> at priority 100 mops up everything else — the voice WS, TTS admin, health checks — after stripping the <code>/api/</code> prefix so the FastAPI app sees clean paths.</p>
+  <p>The compose stack runs a single Traefik instance on port 80. Path rules send <code>/api/chat/*</code>, <code>/api/unraid/*</code>, <code>/api/agents/*</code>, <code>/api/avatar/*</code>, <code>/api/notifications/*</code>, <code>/api/preferences/*</code>, <code>/api/llm/*</code>, <code>/api/docker/*</code>, <code>/api/bot-colors/*</code>, <code>/api/camera-presets/*</code>, <code>/api/uploads/*</code>, <code>/api/media/*</code>, and <code>/api/clog</code> to the frontend container with router priority 200. A backend catch-all on <code>PathPrefix(/api)</code> at priority 100 mops up everything else — the voice WS, TTS admin, health checks — after stripping the <code>/api/</code> prefix so the FastAPI app sees clean paths.</p>
 
   <div class="callout spec">
     <div class="ic">✦</div>
@@ -83,7 +83,7 @@
   <p>The same container serves a dozen host aliases — <code>echo.ferreri.us</code>, <code>echo.zenoran.com</code>, <code>app.bawthub.com</code>, and matching <code>echo.lan.*</code> + <code>dev.echo.lan.*</code> internal names. There's no host-based service selection; the router is host-listed but path-driven. An optional <code>frontend-prod</code> snapshot container behind the <code>snapshot</code> compose profile serves <code>snapshot.echo.lan.*</code> with a baked image when you need a stable build to A/B against the live HMR container.</p>
 
   <h2 id="frontend-shape"><span class="num">03</span> What the frontend looks like.</h2>
-  <p>The Next.js app is organized by feature, not by component type. Almost everything lives under <code>src/app/</code> using App Router conventions. The two main route groups split the layout in half:</p>
+  <p>The React app is organized by feature, not by component type. Almost everything lives under <code>src/app/</code>. The two main layout shells — directory names in <code>(parens)</code>, a convention kept from the app's Next.js days, not framework routing — split the layout in half:</p>
 
   <table class="spec">
     <thead><tr><th>Group</th><th>Layout</th><th>Pages</th></tr></thead>
@@ -119,7 +119,7 @@
   <p>llm-bawt is the LLM orchestration layer — chat completions, memory, tools, agent bridges, bot personalities. It runs in its own Docker stack on port <code>8642</code>, exposes an OpenAI-compatible API at <code>/v1/*</code>, and is reached from both halves of BawtHub via <code>BAWTHUB_LLM_URL=http://host.docker.internal:8642</code>.</p>
 
   <div class="files">
-    <div class="fileref"><code>frontend/src/app/api/chat/*</code><div class="desc"><b>The proxy floor.</b> Every chat-flavored endpoint — bots, models, history, memory, summaries, tool-calls, turn-logs — has a thin Next.js route that forwards to llm-bawt's <code>/v1/*</code>. Headers, auth, and SSE pass-through happen here. The <code>proxy/[...path]</code> catch-all handles long-tail endpoints not worth a dedicated route file.</div></div>
+    <div class="fileref"><code>frontend/server/routes/chat.ts</code><div class="desc"><b>The proxy floor.</b> Every chat-flavored endpoint — bots, models, history, memory, summaries, tool-calls, turn-logs — has a thin Hono route that forwards to llm-bawt's <code>/v1/*</code>. Headers, auth, and SSE pass-through happen here. The <code>proxy/[...path]</code> catch-all handles long-tail endpoints not worth a dedicated route file.</div></div>
     <div class="fileref"><code>bawthub/llm/llm_utils.py</code><div class="desc"><b>The voice path.</b> The Python backend talks to llm-bawt as a stateless OpenAI client and streams word-by-word for low TTS latency. <code>StatelessLLMStream</code> + <code>rechunk_to_words</code> are the relevant helpers.</div></div>
     <div class="fileref"><code>frontend/src/app/chat/useUnifiedEventStream.ts</code><div class="desc"><b>The SSE side.</b> A single Server-Sent Events subscription per bot consumes <code>tool_start</code> / <code>tool_end</code> / <code>turn_complete</code> events from llm-bawt. Used by the chat UI to render live tool activity inline as agent bots execute steps.</div></div>
   </div>
@@ -154,7 +154,7 @@
 
   <h2 id="next"><span class="num">09</span> Where to go from here.</h2>
   <div class="sectionidx">
-    <a href="/architecture/bawthub/frontend.html"><div class="t">Frontend <span class="ar">→</span></div><div class="d">Next.js 16, App Router, Zustand stores, the SSE event bus, and how the chat UI tracks 3,500 lines of state.</div></a>
+    <a href="/architecture/bawthub/frontend.html"><div class="t">Frontend <span class="ar">→</span></div><div class="d">Vite + React Router, Zustand stores, the SSE event bus, and how the chat UI orchestrates its concern dirs.</div></a>
     <a href="/architecture/bawthub/voice.html"><div class="t">Voice <span class="ar">→</span></div><div class="d">The fastrtc handler, Moshi STT/TTS msgpack, the multi-provider TTS registry, and how a word becomes audio in under 200 ms.</div></a>
     <a href="/architecture/bawthub/avatar.html"><div class="t">Avatar <span class="ar">→</span></div><div class="d">VRM, GLB, and FBX in a unified three.js scene with audio-amplitude lip sync and procedural idle motion.</div></a>
     <a href="/architecture/bawthub/surfaces.html"><div class="t">Surfaces <span class="ar">→</span></div><div class="d">A tour of every page — chat, voice, agents, tools, unraid — with the real bot roster doing real work.</div></a>

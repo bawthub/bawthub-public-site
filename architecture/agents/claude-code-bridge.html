@@ -7,7 +7,7 @@
 <meta name="description" content="The Claude Code bridge in llm-bawt: how a Redis command stream, the Claude Agent SDK, and the AgentEvent format combine to stream tool calls from Anthropic's SDK into the same chat UI that renders every other backend." />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-<link rel="stylesheet" href="/architecture/assets/site.css?v=4" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=5" />
 </head>
 <body>
 
@@ -86,7 +86,7 @@
                   → SSE to frontend</pre>
   </div>
 
-  <p>The chat path in <code>AgentBridgeBackend.stream_raw()</code> (which <code>ClaudeCodeBackend</code> inherits unchanged) creates a per-request UUID, opens a <code>RedisSubscriber.subscribe_run(request_id)</code> async iterator, and yields each event into the SSE generator. The bridge never knows there's a Next.js frontend on the other end — it publishes to a stream, and whoever's subscribed reads.</p>
+  <p>The chat path in <code>AgentBridgeBackend.stream_raw()</code> (which <code>ClaudeCodeBackend</code> inherits unchanged) creates a per-request UUID, opens a <code>RedisSubscriber.subscribe_run(request_id)</code> async iterator, and yields each event into the SSE generator. The bridge never knows there's a web frontend on the other end — it publishes to a stream, and whoever's subscribed reads.</p>
 
   <h2 id="session"><span class="num">03</span> Session keys and resume semantics.</h2>
   <p>The Claude Agent SDK has its own session concept — a UUID it assigns when <code>query()</code> first runs. To resume a conversation across turns the bridge has to pass that UUID back as <code>resume_id</code>. <code>llm-bawt</code> stores it in the bot's <code>agent_backend_config.session_key</code> column.</p>

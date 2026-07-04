@@ -31,9 +31,9 @@
     bawthub: {
       label: 'BawtHub', icon: '◐',
       items: [
-        { href: '/architecture/bawthub/overview.html', icon: '◑', name: 'Overview',           desc: 'Next.js web + Python voice + 3D avatar.', built: true },
+        { href: '/architecture/bawthub/overview.html', icon: '◑', name: 'Overview',           desc: 'Vite web + Python voice + 3D avatar.', built: true },
         { href: '/architecture/bawthub/chat.html',     icon: '💬', name: 'Chat surface',       desc: 'How tool calls render. Diffs, parsed commands, MCP pills.', built: true },
-        { href: '/architecture/bawthub/frontend.html', icon: '◇', name: 'Frontend',           desc: 'Next.js 16 · React 19 · Zustand store.', built: true },
+        { href: '/architecture/bawthub/frontend.html', icon: '◇', name: 'Frontend',           desc: 'Vite 8 · React 19 · Hono API · Zustand.', built: true },
         { href: '/architecture/bawthub/voice.html',    icon: '◉', name: 'Voice pipeline',     desc: 'STT (moshi) · TTS · pause-driven turns · realtime ws.', built: true },
         { href: '/architecture/bawthub/avatar.html',   icon: '☻', name: '3D avatar',          desc: 'VRM/GLB · three.js · lip-sync.', built: true },
         { href: '/architecture/bawthub/surfaces.html', icon: '⌗', name: 'UI surfaces',        desc: 'Chat · agents · tools · unraid · memory dashboards.', built: true },

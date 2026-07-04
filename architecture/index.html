@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#0a1322" />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-<link rel="stylesheet" href="/architecture/assets/site.css?v=4" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=5" />
 </head>
 <body>
 
@@ -34,11 +34,11 @@
   <div class="page-head">
     <div class="kicker"><span class="dot"></span> System map</div>
     <h1 class="page-title">A guided tour of the <em>stack</em>.</h1>
-    <p class="lede">BawtHub is built on <code>llm-bawt</code> — a self-hosted, model-agnostic LLM platform with persistent personas, real-time voice, semantic memory, and agent orchestration. This documentation maps every layer. Pick a subsystem to dive in, or hit <kbd style="font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)">⌘K</kbd> to search.</p>
+    <p class="lede">BawtHub is built on <code>llm-bawt</code> — a self-hosted, model-agnostic platform where a team of coding agents builds software and you steer by <b style="color:#dde7f7;font-weight:600">watching them work</b>. Persistent personas, real-time voice, semantic memory, agent orchestration — and the crown jewel, <b style="color:#dde7f7;font-weight:600">live observability</b> of every tool call and its result. This documentation maps every layer. Pick a subsystem, or hit <kbd style="font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)">⌘K</kbd> to search.</p>
     <div class="meta">
       <span><b>23 pages</b> · audited against current code</span>
       <span><b>llm-bawt</b> public on GitHub</span>
-      <span>Last updated 2026-05-13</span>
+      <span>Last updated 2026-07-04</span>
     </div>
   </div>
 
@@ -49,7 +49,7 @@
     <div class="layer-row" style="--accent:#4fd1ff">
       <div class="lbl">Surfaces</div>
       <div class="row">
-        <a class="card" href="/architecture/bawthub/frontend.html"><div class="t">BawtHub web</div><div class="d">Next.js 16 · React 19 · Zustand store</div></a>
+        <a class="card" href="/architecture/bawthub/frontend.html"><div class="t">BawtHub web</div><div class="d">Vite 8 · React 19 · Hono API · Zustand</div></a>
         <a class="card" href="/architecture/bawthub/voice.html"><div class="t">Voice</div><div class="d">STT · TTS · pause-driven turns · realtime ws</div></a>
         <a class="card" href="/architecture/llm-bawt/mcp-server.html"><div class="t">CLI &amp; MCP</div><div class="d"><code>llm -b loopy …</code> · MCP tools for agents</div></a>
       </div>
@@ -130,7 +130,7 @@
     </a>
     <a href="/architecture/bawthub/overview.html">
       <div class="t">BawtHub <span class="ar">→</span></div>
-      <div class="d">The frontend. Next.js web UI, Python voice backend, 3D avatar, multi-surface streaming consumer.</div>
+      <div class="d">The frontend. Vite + React 19 web UI, Hono API, Python voice backend, 3D avatar, multi-surface streaming consumer.</div>
     </a>
     <a href="/architecture/deployment/">
       <div class="t">Deployment <span class="ar">→</span></div>

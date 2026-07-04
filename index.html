@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BawtHub — Your bots, not your sessions.</title>
-<meta name="description" content="BawtHub is a self-hosted personal AI platform built around persistent personas. Each bawt has a name, a voice, a memory, and a job — and they can talk to each other." />
-<meta property="og:title" content="BawtHub — Your bots, not your sessions." />
-<meta property="og:description" content="A self-hosted personal AI platform built around persistent personas with shared memory, real-time voice, and an agent task system." />
+<title>BawtHub — Watch the agents work.</title>
+<meta name="description" content="A self-hosted, always-on family of real coding agents you steer by watching them work — every tool call and its result, rendered live. Most agent tools hide the work. BawtHub shows it." />
+<meta property="og:title" content="BawtHub — Watch the agents work." />
+<meta property="og:description" content="Observable agentic development: a self-hosted team of real coding agents you steer by watching, not by firing a message into a black box. Full tool calls and results, live." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://bawthub.com" />
-<meta name="theme-color" content="#0a1322" />
-<link rel="preconnect" href="https://rsms.me/" />
-<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<meta name="theme-color" content="#050a13" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b5cf6'/%3E%3Cstop offset='.5' stop-color='%234fd1ff'/%3E%3Cstop offset='1' stop-color='%234fffd1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='40' height='40' rx='12' fill='url(%23g)'/%3E%3Ctext x='20' y='28' font-size='22' font-family='sans-serif' font-weight='800' fill='%23081018' text-anchor='middle'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&display=swap" />
 <style>
   :root{
     --bg-0:#050a13;
@@ -31,120 +33,192 @@
     --orange:#ff8b4f;
     --gold:#ffd24f;
     --green:#65e89b;
+    --emerald:#34d399;
+    --sky:#38bdf8;
+    --amber:#fbbf24;
     --red:#ff6f7d;
-    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"JetBrains Mono",monospace;
+    --sans:'Satoshi',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:radial-gradient(1200px 720px at 80% -10%, #1a2750 0%, transparent 55%),radial-gradient(900px 560px at 0% 0%, #2a1758 0%, transparent 60%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-  body{min-height:100vh}
+  html{scroll-behavior:smooth}
+  html,body{margin:0;background:radial-gradient(1200px 720px at 80% -10%, #1a2750 0%, transparent 55%),radial-gradient(900px 560px at 0% 0%, #2a1758 0%, transparent 60%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{min-height:100vh;overflow-x:hidden}
   a{color:inherit;text-decoration:none}
-  ::selection{background:rgba(139,92,246,.5);color:#fff}
+  code{font-family:var(--mono)}
+  ::selection{background:rgba(79,209,255,.4);color:#fff}
 
   .noise::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;background-image:radial-gradient(rgba(255,255,255,.8) 0.5px,transparent 0.5px);background-size:14px 14px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.5),rgba(0,0,0,.05));z-index:0}
-  .grid-bg::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 75%);z-index:0}
+  .grid-bg::after{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse 80% 60% at 50% 25%,#000 30%,transparent 75%);z-index:0}
 
   .shell{max-width:1200px;margin:0 auto;padding:24px 24px 80px;position:relative;z-index:1}
 
   /* NAV */
-  .nav{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-bottom:64px}
-  .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.01em;font-size:18px}
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-bottom:56px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.01em;font-size:18px}
   .logo{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:conic-gradient(from 220deg, var(--violet), var(--cyan), var(--teal), var(--violet));box-shadow:0 12px 36px rgba(91,111,255,.4),inset 0 0 0 1px rgba(255,255,255,.15);font-size:18px;color:#fff;position:relative}
   .logo::after{content:"";position:absolute;inset:3px;border-radius:11px;background:#0a1322}
   .logo span{position:relative;z-index:1;font-weight:800}
   .nav-links{display:flex;gap:28px;font-size:14px;color:var(--muted)}
   .nav-links a{transition:color .15s}
   .nav-links a:hover{color:var(--text)}
-  .nav-right{display:flex;align-items:center;gap:16px}
-  .cta{padding:11px 20px;border-radius:999px;background:linear-gradient(135deg, rgba(139,92,246,.95), rgba(79,209,255,.95));color:#fff;font-weight:600;font-size:14px;box-shadow:0 10px 28px rgba(79,121,255,.32);transition:transform .15s,box-shadow .15s}
+  .nav-right{display:flex;align-items:center;gap:14px}
+  .nav-src{font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;padding:9px 4px;transition:color .15s}
+  .nav-src:hover{color:var(--text)}
+  .cta{padding:11px 20px;border-radius:999px;background:linear-gradient(135deg, rgba(139,92,246,.95), rgba(79,209,255,.95));color:#fff;font-weight:600;font-size:14px;box-shadow:0 10px 28px rgba(79,121,255,.32);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:8px}
   .cta:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(79,121,255,.42)}
+  .cta svg{width:16px;height:16px}
 
   /* HERO */
-  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:24px 0 80px}
-  .eyebrow{display:inline-flex;gap:10px;align-items:center;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);color:#cde0ff;font-size:13px;font-weight:500;margin-bottom:22px}
-  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
-  h1{margin:0 0 22px;font-size:clamp(44px,6.4vw,76px);line-height:.96;letter-spacing:-.045em;font-weight:700;background:linear-gradient(180deg,#fff 0%,#bccae3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .hero{display:grid;grid-template-columns:1.02fr .98fr;gap:52px;align-items:center;padding:16px 0 72px}
+  .eyebrow{display:inline-flex;gap:10px;align-items:center;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);color:#cde0ff;font-size:13px;font-weight:500;margin-bottom:24px}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+  h1{margin:0 0 22px;font-size:clamp(44px,6.6vw,78px);line-height:.95;letter-spacing:-.045em;font-weight:800;background:linear-gradient(180deg,#fff 0%,#bccae3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   h1 .accent{background:linear-gradient(120deg,var(--cyan),var(--violet) 60%,var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .lede{color:var(--muted);font-size:19px;line-height:1.6;max-width:560px;margin-bottom:30px}
+  .lede{color:var(--muted);font-size:19px;line-height:1.6;max-width:568px;margin-bottom:30px}
   .lede b{color:#dde7f7;font-weight:600}
   .actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
   .secondary{padding:11px 20px;border-radius:999px;border:1px solid var(--line-strong);color:var(--text);background:rgba(255,255,255,.03);font-weight:500;font-size:14px;transition:background .15s,border-color .15s}
   .secondary:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.28)}
-  .meta-row{display:flex;gap:22px;margin-top:36px;font-size:13px;color:var(--dim)}
+  .meta-row{display:flex;gap:22px;margin-top:34px;font-size:13px;color:var(--dim);flex-wrap:wrap}
+  .meta-row span{display:inline-flex;align-items:center;gap:8px}
+  .meta-row span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
   .meta-row span b{color:var(--text);font-weight:600}
 
-  /* TRANSCRIPT CARD (hero right) */
+  /* GLASS + TOOL-CALL HERO CARD (crafted to match the real app) */
   .glass{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(18px);box-shadow:0 24px 80px rgba(0,0,0,0.45)}
-  .transcript{border-radius:24px;padding:0;overflow:hidden;position:relative;background:radial-gradient(circle at 80% 0%,rgba(79,209,255,.18),transparent 35%),radial-gradient(circle at 0% 100%,rgba(139,92,246,.22),transparent 38%),rgba(10,18,32,.85)}
-  .t-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
-  .t-head .dots{display:flex;gap:7px}
-  .t-head .dots span{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.16)}
-  .t-head .dots span:nth-child(1){background:rgba(255,99,125,.7)}
-  .t-head .dots span:nth-child(2){background:rgba(255,210,79,.7)}
-  .t-head .dots span:nth-child(3){background:rgba(101,232,155,.7)}
-  .t-tabs{display:flex;gap:6px;font-size:12px;color:var(--muted)}
-  .t-tab{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
-  .t-tab.active{background:rgba(139,92,246,.15);color:#d9c8ff;border-color:rgba(139,92,246,.4)}
-  .t-body{padding:18px;display:grid;gap:12px;font-size:14px}
-  .msg{display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start}
-  .ava{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;letter-spacing:.02em}
-  .ava.you{background:linear-gradient(135deg,#4a5568,#2d3748);color:#cbd5e0}
-  .ava.loopy{background:linear-gradient(135deg,var(--cyan),#0ea5e9)}
-  .ava.vex{background:linear-gradient(135deg,var(--pink),#a21caf)}
-  .who{color:var(--dim);font-size:12px;margin-bottom:4px;font-weight:500}
-  .who b{color:var(--text);font-weight:600}
-  .who .pill{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:11px;margin-left:6px;color:var(--muted)}
-  .bubble{color:#dde7f7;line-height:1.55}
-  .tool{margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.32);border:1px solid var(--line);font-family:var(--mono);font-size:12px;color:#b6c8e2}
-  .tool .t-name{color:var(--cyan);font-weight:600}
-  .tool .t-args{color:#dde7f7;opacity:.9}
-  .tool .t-result{color:var(--green);display:block;margin-top:4px;opacity:.95}
-  .tool.delegated .t-name{color:var(--pink)}
-  .typing{display:inline-flex;gap:3px;padding:4px 0}
-  .typing span{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
-  .typing span:nth-child(2){animation-delay:.2s}
-  .typing span:nth-child(3){animation-delay:.4s}
-  @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+  .cockpit{border-radius:22px;overflow:hidden;position:relative;background:radial-gradient(circle at 82% -5%,rgba(79,209,255,.14),transparent 38%),radial-gradient(circle at 0% 100%,rgba(139,92,246,.18),transparent 42%),rgba(8,15,28,.9)}
+  .cp-head{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .cp-head .dots{display:flex;gap:7px}
+  .cp-head .dots span{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.16)}
+  .cp-head .dots span:nth-child(1){background:rgba(255,111,125,.7)}
+  .cp-head .dots span:nth-child(2){background:rgba(255,210,79,.7)}
+  .cp-head .dots span:nth-child(3){background:rgba(101,232,155,.7)}
+  .cp-head .who{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .cp-head .who b{color:#dde7f7;font-weight:600}
+  .cp-head .live{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--emerald);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .cp-head .live .d{width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald);animation:pulse 1.6s infinite}
+  .cp-body{padding:16px;display:grid;gap:11px}
+  .cp-user{display:flex;gap:10px;align-items:flex-start;font-size:13.5px}
+  .cp-user .ava{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#4a5568,#2d3748);color:#cbd5e0;display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+  .cp-user .txt{color:#dde7f7;padding-top:3px}
+
+  /* tool card */
+  .tcard{border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.28);overflow:hidden}
+  .tcard + .tcard{margin-top:2px}
+  .tc-top{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .tc-check{width:16px;height:16px;border-radius:50%;background:rgba(52,211,153,.16);color:var(--emerald);display:grid;place-items:center;font-size:10px;flex:none}
+  .tc-name{font-family:var(--mono);font-size:12.5px;color:var(--cyan);font-weight:600}
+  .tc-src{font-size:11px;color:var(--dim);font-style:italic}
+  .tc-meta{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--dim);white-space:nowrap}
+  .tc-meta b{color:var(--muted);font-weight:500}
+  .tc-body{padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#b6c8e2}
+  .tc-lbl{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;display:flex;align-items:center;gap:7px}
+  .tc-pill{padding:1px 7px;border-radius:999px;font-size:9px;font-weight:600;letter-spacing:.02em;text-transform:none}
+  .tc-pill.ok{background:rgba(52,211,153,.14);color:var(--emerald)}
+  .tc-arg{color:#dde7f7}
+  .tc-arg .k{color:var(--muted)}
+  .tc-req{padding-bottom:9px;border-bottom:1px dashed rgba(255,255,255,.07);margin-bottom:9px}
+  .diffchip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;padding:1px 8px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid var(--line);margin-left:8px}
+  .diffchip .add{color:var(--emerald)}
+  .diffchip .del{color:var(--red)}
+  .diff{margin-top:2px}
+  .diff .ln{display:block;padding:0 6px;border-radius:3px}
+  .diff .add{background:rgba(52,211,153,.1);color:#9df3cf}
+  .diff .del{background:rgba(255,111,125,.09);color:#ffb0b8}
+  .tc-res{color:#9df3cf}
+  .cp-stream{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;padding-top:2px}
+  .cp-stream .ava{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--orange),#dc4a1c);color:#0a1322;display:grid;place-items:center;font-weight:800;font-size:12px;flex:none}
+  .cp-stream .txt{color:#dde7f7;padding-top:3px}
+  .cursor{display:inline-block;width:7px;height:15px;background:var(--cyan);margin-left:2px;vertical-align:-2px;animation:caret 1.05s step-end infinite;box-shadow:0 0 8px var(--cyan)}
+  @keyframes caret{0%,100%{opacity:1}50%{opacity:0}}
+  .reveal{animation:rise .5s both}
+  .reveal.d1{animation-delay:.15s}.reveal.d2{animation-delay:.7s}.reveal.d3{animation-delay:1.5s}.reveal.d4{animation-delay:2.3s}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   /* SECTION SHELL */
   .section{margin:120px 0;position:relative}
-  .section-head{margin-bottom:48px;max-width:760px}
+  .section-head{margin-bottom:44px;max-width:780px}
   .kicker{font-size:13px;color:var(--cyan);font-weight:600;letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px}
-  .section h2{font-size:clamp(34px,4vw,52px);font-weight:700;margin:0 0 16px;line-height:1.05;letter-spacing:-.03em;background:linear-gradient(180deg,#fff,#bccae3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .section h2{font-size:clamp(32px,4vw,50px);font-weight:800;margin:0 0 16px;line-height:1.05;letter-spacing:-.03em;background:linear-gradient(180deg,#fff,#bccae3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   .section h2 em{font-style:normal;background:linear-gradient(120deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .section .lede2{color:var(--muted);font-size:18px;line-height:1.6;max-width:660px}
+  .section .lede2{color:var(--muted);font-size:18px;line-height:1.62;max-width:680px}
+  .section .lede2 b{color:#dde7f7;font-weight:600}
+
+  /* CONTRARIAN BET BAND */
+  .bet{margin:120px 0;padding:64px 48px;border-radius:28px;border:1px solid var(--line);position:relative;overflow:hidden;background:radial-gradient(900px 400px at 100% 0%,rgba(139,92,246,.14),transparent 60%),radial-gradient(700px 360px at 0% 100%,rgba(79,209,255,.08),transparent 60%),rgba(9,16,30,.6)}
+  .bet .tag{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--pink);margin-bottom:22px}
+  .bet h2{font-size:clamp(30px,4.4vw,56px);line-height:1.04;letter-spacing:-.035em;font-weight:800;margin:0 0 24px;max-width:900px}
+  .bet h2 .hide{color:var(--dim)}
+  .bet h2 .show{background:linear-gradient(120deg,var(--cyan),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .bet p{color:var(--muted);font-size:18px;line-height:1.65;max-width:720px;margin:0 0 14px}
+  .bet p b{color:#eaf1ff;font-weight:600}
+  .bet .punch{color:#eaf1ff;font-size:19px;font-weight:600;margin-top:24px;max-width:760px}
+  .bet .punch em{font-style:normal;color:var(--cyan)}
+
+  /* VS */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:22px;overflow:hidden;border:1px solid var(--line);margin-top:48px}
+  .vs-col{padding:30px 28px;background:rgba(255,255,255,.02)}
+  .vs-col.us{background:linear-gradient(180deg,rgba(79,209,255,.07),rgba(139,92,246,.04));border-left:1px solid var(--line)}
+  .vs-col h3{margin:0 0 6px;font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .vs-col.us h3{color:var(--cyan)}
+  .vs-col .sub{font-size:20px;font-weight:700;margin-bottom:22px;color:var(--text);letter-spacing:-.01em}
+  .vs-col.us .sub{background:linear-gradient(120deg,var(--cyan),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .vs-col ul{margin:0;padding:0;list-style:none;display:grid;gap:14px}
+  .vs-col li{display:grid;grid-template-columns:20px 1fr;gap:11px;align-items:start;color:var(--muted);font-size:15px;line-height:1.5}
+  .vs-col li b{color:var(--text);font-weight:600}
+  .vs-col li .mk{width:18px;height:18px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:700;margin-top:2px}
+  .vs-col.them li .mk{background:rgba(255,111,125,.12);color:var(--red)}
+  .vs-col.us li .mk{background:rgba(52,211,153,.14);color:var(--emerald)}
+
+  /* SHOT (real screenshot receipts) */
+  .shot{border-radius:18px;overflow:hidden;border:1px solid var(--line-strong);background:#070d18;box-shadow:0 30px 90px rgba(0,0,0,.55);position:relative}
+  .shot img{display:block;width:100%;height:auto}
+  .shot .bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .shot .bar span{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.16)}
+  .shot .bar span:nth-child(1){background:rgba(255,111,125,.7)}
+  .shot .bar span:nth-child(2){background:rgba(255,210,79,.7)}
+  .shot .bar span:nth-child(3){background:rgba(101,232,155,.7)}
+  .shot .bar .url{margin-left:10px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .shot-tag{position:absolute;left:16px;bottom:16px;font-family:var(--mono);font-size:11px;color:#cde0ff;background:rgba(5,10,19,.82);border:1px solid var(--line);border-radius:8px;padding:6px 11px;backdrop-filter:blur(6px)}
+  .split{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
+  .split.rev{grid-template-columns:.85fr 1.15fr}
+  .split .copy h3{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px}
+  .split .copy p{color:var(--muted);font-size:16px;line-height:1.62;margin:0 0 16px}
+  .split .copy p b{color:#dde7f7;font-weight:600}
+  .annots{display:grid;gap:11px;margin-top:20px}
+  .annot{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;font-size:14px;color:var(--muted);line-height:1.45}
+  .annot .n{font-family:var(--mono);font-size:11px;color:var(--cyan);border:1px solid rgba(79,209,255,.3);border-radius:6px;padding:2px 7px;background:rgba(79,209,255,.06);white-space:nowrap}
+  .annot b{color:var(--text);font-weight:600}
+
+  /* WHAT IT IS — cards */
+  .whatis{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .wi{padding:26px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));position:relative;overflow:hidden}
+  .wi::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,var(--accent,var(--cyan)),transparent 55%);opacity:.12;pointer-events:none}
+  .wi .ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;background:color-mix(in srgb,var(--accent,var(--cyan)) 16%,transparent);color:var(--accent,var(--cyan))}
+  .wi .ic svg{width:20px;height:20px}
+  .wi h4{margin:0 0 8px;font-size:19px;font-weight:700;letter-spacing:-.015em}
+  .wi p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.55}
+  .wi p b{color:#dde7f7;font-weight:600}
 
   /* BOTS ROSTER */
-  .bots{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-  .bot{position:relative;padding:24px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));overflow:hidden;transition:transform .2s,border-color .2s}
+  .bots{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .bot{position:relative;padding:22px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));overflow:hidden;transition:transform .2s,border-color .2s}
   .bot:hover{transform:translateY(-2px);border-color:var(--line-strong)}
-  .bot::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,var(--accent,var(--violet)),transparent 50%);opacity:.18;pointer-events:none}
-  .bot-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;position:relative}
-  .bot-ava{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2,var(--accent)));font-weight:800;font-size:18px;color:#0a1322;box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.15)}
-  .bot-name{font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .bot::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,var(--accent,var(--violet)),transparent 50%);opacity:.16;pointer-events:none}
+  .bot-head{display:flex;align-items:center;gap:13px;margin-bottom:12px;position:relative}
+  .bot-ava{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2,var(--accent)));font-weight:800;font-size:17px;color:#0a1322;box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.15)}
+  .bot-name{font-size:19px;font-weight:700;letter-spacing:-.01em}
   .bot-role{font-size:12px;color:var(--muted);font-weight:500}
-  .bot p{margin:0 0 16px;color:#cdd9eb;font-size:14px;line-height:1.55;position:relative;min-height:60px}
+  .bot p{margin:0 0 14px;color:#cdd9eb;font-size:13.5px;line-height:1.5;position:relative;min-height:56px}
   .chips{display:flex;flex-wrap:wrap;gap:6px;position:relative}
   .chip{font-size:11px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--muted);font-weight:500}
   .chip.on{background:color-mix(in srgb,var(--accent) 18%,transparent);color:color-mix(in srgb,var(--accent) 70%,#fff 30%);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
 
-  /* CONTRAST SECTION */
-  .vs{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:24px;overflow:hidden;border:1px solid var(--line)}
-  .vs-col{padding:32px 28px;background:rgba(255,255,255,.02)}
-  .vs-col.us{background:linear-gradient(180deg,rgba(139,92,246,.08),rgba(79,209,255,.04));border-left:1px solid var(--line)}
-  .vs-col h3{margin:0 0 6px;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
-  .vs-col.us h3{color:var(--cyan)}
-  .vs-col .sub{font-size:20px;font-weight:600;margin-bottom:22px;color:var(--text)}
-  .vs-col.us .sub{background:linear-gradient(120deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .vs-col ul{margin:0;padding:0;list-style:none;display:grid;gap:14px}
-  .vs-col li{display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start;color:var(--muted);font-size:15px;line-height:1.5}
-  .vs-col li b{color:var(--text);font-weight:600}
-  .vs-col li .mk{width:18px;height:18px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:700;margin-top:2px}
-  .vs-col.them li .mk{background:rgba(255,111,125,.12);color:var(--red)}
-  .vs-col.us li .mk{background:rgba(101,232,155,.14);color:var(--green)}
-
   /* STACK DIAGRAM */
-  .stack{display:grid;gap:14px;padding:28px;border-radius:24px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
-  .layer{padding:18px 22px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.025);display:grid;grid-template-columns:160px 1fr;gap:24px;align-items:center}
+  .stack{display:grid;gap:14px;padding:26px;border-radius:22px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .layer{padding:18px 22px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.025);display:grid;grid-template-columns:170px 1fr;gap:24px;align-items:center}
   .layer-label{display:flex;align-items:center;gap:10px}
   .layer-label .ldot{width:10px;height:10px;border-radius:50%;background:var(--accent,var(--violet));box-shadow:0 0 12px var(--accent,var(--violet))}
   .layer-label .ltext{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
@@ -159,45 +233,85 @@
   .layer.l-agents{--accent:var(--pink)}
 
   /* AGENT TASK FLOW */
-  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.02);overflow:hidden}
+  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.02);overflow:hidden}
   .step{padding:24px 20px;border-right:1px solid var(--line);position:relative}
   .step:last-child{border-right:none}
   .step .num{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:10px;letter-spacing:.1em}
-  .step h4{margin:0 0 8px;font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .step h4{margin:0 0 8px;font-size:17px;font-weight:700;letter-spacing:-.01em}
   .step p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
   .step .actor{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;margin-top:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
   .step .actor.human{background:rgba(101,232,155,.12);color:var(--green)}
   .step .actor.agent{background:rgba(139,92,246,.15);color:#d9c8ff}
   .step .actor.bot{background:rgba(79,209,255,.15);color:#bcefff}
 
-  /* QUOTE / PHILOSOPHY */
-  .quote{padding:48px;border-radius:24px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(79,209,255,.04));text-align:center;max-width:880px;margin:120px auto}
-  .quote p{font-size:clamp(22px,2.6vw,30px);line-height:1.4;font-weight:500;margin:0 0 18px;letter-spacing:-.015em;color:#e9eeff}
+  /* INTERSECTION TABLE */
+  .why-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:start}
+  .intersect{display:grid;gap:10px}
+  .ix{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.025)}
+  .ix .b{font-family:var(--mono);font-size:12px;color:var(--dim);width:22px;flex:none}
+  .ix .t{font-size:15px;color:#dde7f7;font-weight:600}
+  .ix .t span{color:var(--muted);font-weight:400}
+  .ix.crown{border-color:rgba(79,209,255,.4);background:linear-gradient(120deg,rgba(79,209,255,.1),rgba(139,92,246,.06))}
+  .ix.crown .t{color:#fff}
+  .ix.crown .b{color:var(--cyan)}
+  .drop{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .drop .dr{display:grid;grid-template-columns:1fr 1fr;font-size:14px;border-bottom:1px solid var(--line)}
+  .drop .dr:last-child{border-bottom:none}
+  .drop .dr > div{padding:12px 16px}
+  .drop .dr .l{color:var(--muted);border-right:1px solid var(--line)}
+  .drop .dr .r{color:#dde7f7}
+  .drop .dr.hd > div{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);background:rgba(255,255,255,.02)}
+  .drop .dr .r b{color:var(--pink);font-weight:600}
+  .drop .dr.crown .r{color:var(--cyan);font-weight:600}
+
+  /* FEATURES STRIP (demoted) */
+  .feat{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .fcard{padding:24px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.025)}
+  .fcard .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;margin-bottom:14px;background:color-mix(in srgb,var(--accent,var(--teal)) 16%,transparent);color:var(--accent,var(--teal))}
+  .fcard .ic svg{width:19px;height:19px}
+  .fcard h4{margin:0 0 7px;font-size:17px;font-weight:700}
+  .fcard p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+  .fcard.c1{--accent:var(--teal)}.fcard.c2{--accent:var(--gold)}.fcard.c3{--accent:var(--pink)}
+
+  /* QUOTE */
+  .quote{padding:52px 48px;border-radius:24px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(79,209,255,.04));text-align:center;max-width:900px;margin:120px auto}
+  .quote p{font-size:clamp(22px,2.6vw,32px);line-height:1.4;font-weight:600;margin:0 0 18px;letter-spacing:-.02em;color:#e9eeff}
   .quote p em{font-style:normal;background:linear-gradient(120deg,var(--cyan),var(--violet) 70%,var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   .quote .sig{color:var(--dim);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
 
   /* ORIGIN TIMELINE */
-  .timeline{display:grid;grid-template-columns:1fr;gap:0;border-left:2px solid var(--line);margin-left:14px;padding-left:0}
-  .tl-item{position:relative;padding:0 0 36px 32px;margin-left:-2px;border-left:2px solid transparent}
+  .timeline{display:grid;grid-template-columns:1fr;gap:0;border-left:2px solid var(--line);margin-left:14px}
+  .tl-item{position:relative;padding:0 0 34px 32px;margin-left:-2px;border-left:2px solid transparent}
   .tl-item::before{content:"";position:absolute;left:-9px;top:6px;width:16px;height:16px;border-radius:50%;background:var(--bg-0);border:2px solid var(--accent,var(--violet));box-shadow:0 0 0 4px rgba(10,19,34,1),0 0 18px var(--accent,var(--violet))}
   .tl-era{font-family:var(--mono);font-size:11px;color:var(--accent,var(--violet));font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
-  .tl-item h4{margin:0 0 8px;font-size:20px;font-weight:600;letter-spacing:-.01em}
-  .tl-item p{margin:0;color:var(--muted);font-size:15px;line-height:1.6;max-width:680px}
+  .tl-item h4{margin:0 0 8px;font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .tl-item p{margin:0;color:var(--muted);font-size:15px;line-height:1.6;max-width:700px}
+  .tl-item p b{color:#dde7f7;font-weight:600}
   .tl-item code{font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.4);padding:2px 7px;border-radius:5px;color:#dde7f7;border:1px solid var(--line)}
   .tl-item.a1{--accent:var(--cyan)}
   .tl-item.a2{--accent:var(--violet)}
   .tl-item.a3{--accent:var(--teal)}
   .tl-item.a4{--accent:var(--pink)}
   .tl-item.a5{--accent:var(--gold)}
+  .tl-item.a6{--accent:var(--emerald)}
+
+  /* PRIVATE NOTE */
+  .privnote{margin:96px 0 0;padding:28px 32px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02);display:flex;gap:18px;align-items:flex-start}
+  .privnote .ic{width:38px;height:38px;border-radius:11px;flex:none;display:grid;place-items:center;background:rgba(255,210,79,.12);color:var(--gold)}
+  .privnote .ic svg{width:19px;height:19px}
+  .privnote h4{margin:0 0 6px;font-size:16px;font-weight:700}
+  .privnote p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.6;max-width:820px}
+  .privnote p b{color:#dde7f7;font-weight:600}
 
   /* FOOTER */
-  .footer{margin-top:120px;padding:36px 0 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;color:var(--dim);font-size:13px}
+  .footer{margin-top:110px;padding:36px 0 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;color:var(--dim);font-size:13px}
   .footer .f-links{display:flex;gap:24px}
+  .footer .f-links a{display:inline-flex;align-items:center;gap:6px;transition:color .15s}
   .footer .f-links a:hover{color:var(--text)}
 
   /* RESPONSIVE */
   @media(max-width:980px){
-    .hero{grid-template-columns:1fr;gap:40px}
+    .hero{grid-template-columns:1fr;gap:38px}
     .nav-links{display:none}
     .bots{grid-template-columns:repeat(2,1fr)}
     .vs{grid-template-columns:1fr}
@@ -208,121 +322,120 @@
     .step:nth-last-child(-n+2){border-bottom:none}
     .step:last-child:nth-child(odd){grid-column:1/-1;border-right:none}
     .layer{grid-template-columns:1fr;gap:12px}
+    .split,.split.rev,.why-grid{grid-template-columns:1fr;gap:28px}
+    .whatis{grid-template-columns:1fr}
+    .bet{padding:44px 28px}
   }
   @media(max-width:600px){
-    .bots{grid-template-columns:1fr}
+    .bots,.feat{grid-template-columns:1fr}
     .shell{padding:20px 18px 60px}
-    .nav{margin-bottom:40px}
+    .nav{margin-bottom:36px}
     .section{margin:80px 0}
-    .quote{padding:32px 24px;margin:80px auto}
+    .bet{margin:80px 0}
+    .quote{padding:34px 24px;margin:80px auto}
     .flow{grid-template-columns:1fr}
     .step{border-right:none;border-bottom:1px solid var(--line)}
     .step:last-child{border-bottom:none}
+    .drop .dr{grid-template-columns:1fr}
+    .drop .dr .l{border-right:none;border-bottom:1px solid var(--line)}
+    .privnote{flex-direction:column;gap:12px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;scroll-behavior:auto}
   }
 </style>
 </head>
 <body class="noise grid-bg">
 <!--
   =====================================================================
-  BAWTHUB · STORY & FUNCTIONALITY REFERENCE (Nick, May 2026)
+  BAWTHUB · POSITIONING & FUNCTIONALITY REFERENCE
   =====================================================================
   Logged here so future maintainers (including future-Claude) have the
-  full narrative in-source, not just in a chat log.
+  full narrative in-source, not just in a chat log. The North Star lives
+  in POSITIONING.md in this repo — read it before re-messaging the site.
 
-  ORIGIN — CLI ROOTS
-  ------------------
-  The whole stack starts at llm-bawt, which began life as a CLI for
-  messaging LLMs:
-      llm "what's up"
-      llm -b loopy "what's up"   # talk to a specific bot
-  Originally local/file-based message history. Moved to a server-side
-  backend so the same bots could be reached across platforms/machines.
-
-  KEY POINT — UNIFIED API
-  -----------------------
-  llm-bawt merges every LLM provider behind a single OpenAI-compatible
-  API: local GGUF models, OpenAI, Grok (xAI), Anthropic Claude (via
-  Agent SDK), Ollama, vLLM. Bots are configured with their own system
-  prompts, memory spaces, and per-bot settings.
-
-  MEMORY ARCHITECTURE
-  -------------------
-  Multi-layer in Postgres + pgvector:
-    - message history (raw turns)
-    - semantic memories (facts that decay unless reinforced; contradictions resolved)
-    - summaries (rolled-up conversation context)
-    - user profile (attributes with confidence scores + provenance)
-    - per-bot segregated memory + shared cross-bot history pool
-
-  UI EVOLUTION — BAWTHUB BORN
-  ---------------------------
-  Started as "unmute" — a full-stack realtime voice chat framework.
-  Low-latency STT, TTS, hotword detection. The site grew off that and
-  put more emphasis on text chat, but voice always remains a feature.
-
-  AGENT INTEGRATION
-  -----------------
-  Started with OpenClaw — fit OpenClaw agents into the same chat UI as
-  regular bots, evolving the concept of realtime streaming of tool call
-  request/response. Built a Redis backend and a per-agent-type bridge.
-
-  When Claude OAuth was banned from OpenClaw, integrated the Claude Code
-  SDK over the same bridge pattern. Today: full integration with
-  Codex, Claude Code, OpenClaw, plus native tool-call/loop on non-agent
-  bots. Streaming events are THE focal point and the biggest engineering
-  struggle — getting tool calls + responses across all agent backends
-  rendered beautifully and informatively in one UI. Events stream into a
-  Zustand client store, so flipping between bots is instant and threads
-  keep going.
-
-  CROSS-SURFACE CONTINUITY
-  ------------------------
-  All built around the same core API. You can have a chat in the web UI
-  and continue the same thread from the command line — same session,
-  same memory.
-
-  AGENT TASK SYSTEM
-  -----------------
-  Projects: high-level component with its own markdown definition.
-  Tasks: feature/work items within a project.
-  Lifecycle:
-    1. Create — title, description, optional image attachments
-    2. Plan — agent refines task into a detailed markdown plan
-    3. Dispatch — task sent to a bot with a clean context containing
-       ONLY the project markdown + the task markdown
-    4. Execute — bot works, streams progress via REST callbacks
-    5. Review — bot marks task complete with a summary
-    6. Approve/Revise — human signs off or sends back; agent revises
-  Agents have MCP tools for managing tasks/projects + tapping the full
-  memory layer.
-
-  THE DIFFERENTIATOR — PERSONAS, NOT SESSIONS
+  THE THESIS — OBSERVABLE AGENTIC DEVELOPMENT
   -------------------------------------------
-  Other tools: Claude Code "agents" = single session, blank slate plus
-  a markdown. Copilot = a sidebar where you keep hitting "new chat" and
-  starting fresh. ChatGPT projects = a folder of conversations.
+  BawtHub is a self-hosted, always-on family of REAL coding agents you
+  steer by WATCHING them work — full tool calls AND their results
+  rendered live — not by firing a message into a black box.
 
-  BawtHub: each bot is a constant entity you go back to by name. Loopy,
-  Vex, Snark, Caid — they have system prompts, memories, voices, and
-  roles. There is something weird and good about giving an agent a name
-  and going back to it; it builds attachment beyond a recycled session.
+  The crown jewel is OBSERVABILITY: seeing what the agent does WHILE it
+  does it. That is the ~600-hour differentiator and why the app is still
+  private. The site leads with it.
 
-  Bots can ALSO talk to each other (via mcp__bots_send_message) and pull
-  each other's history. You can be working with Snark on something, ping
-  Vex to handle a side-task, and let Loopy continue Snark's thread later
-  because they share the same memory pool.
+  THE CONTRARIAN BET: most agent tools HIDE the work (spinner, "thinking",
+  a collapsed log, a clean final diff). The industry optimizes for
+  demo-comfort. BawtHub makes the opposite bet: the process IS the
+  product. The failure mode of agentic coding isn't "it can't code" — it's
+  "it confidently did the wrong thing three steps deep and you didn't
+  notice." Visibility is the fix.
+
+  WHAT IT ACTUALLY IS: a developer's laptop, except remote, always-on, and
+  agent-operated. Runs 24/7 (close your laptop, the agents keep working).
+  A family of agents shares ONE filesystem across bridges — a team, not
+  one task-runner in a sandbox. You control it by chatting. What the
+  agents build runs on the host; BawtHub is the cockpit, not the user's
+  prod host.
+
+  THE DIFFERENTIATED INTERSECTION (nobody else ships all six):
+  self-hosted · multi-agent-sharing-one-workspace · persistent-24/7 ·
+  chat-native · built on real coding harnesses · with LIVE observability.
+  Drop any one and it collapses into Devin / OpenHands / Cursor / Coder.
+  Live observability is the one nobody has.
+
+  PERSONA CLARITY (don't blur on the site):
+  1. BawtHub-developer (Nick) — recursive/self-hosting; special case of 2.
+  2. A user running their own agent-dev box — their project, their agents.
+  3. The prod-only installer — just runs chat/voice/memory, no agents dev.
+  The membrane between "who builds BawtHub" and "who installs it" is the
+  published GHCR image. The workshop is not the product.
+
+  ARCHITECTURE (accurate as of 2026-07)
+  -------------------------------------
+  - llm-bawt: FastAPI (Python 3.12) OpenAI-compatible spine. Merges every
+    provider behind one API — OpenAI, Anthropic Claude, xAI/Grok, local
+    GGUF/llama.cpp, Ollama, vLLM. Bot registry, tool router, streaming
+    event bus. Postgres + pgvector memory (history, semantic memories that
+    decay/supersede, summaries, user profile; per-bot + shared pool).
+  - BawtHub frontend: Vite 8 SPA + React 19 + Hono API (TypeScript). NOT
+    Next.js anymore (migrated). Zustand store, TanStack Query. Chat, voice
+    (STT/TTS/hotword), 3D avatar, the Relay/Tasks dashboards, Docker/Unraid.
+  - Agent bridges: Claude Code SDK, Codex, OpenClaw — Redis-fanout, common
+    AgentEvent protocol. Streaming tool calls + results into one UI is THE
+    focal engineering problem and the biggest struggle. Every recent commit
+    is observability work: turn-card metadata (exact time, latency,
+    token/context, model), +N/-N diff chips on Write/Edit cards, sub-agent
+    tool nesting under Agent cards, live-streamed pending questions,
+    relay timeline cards, approval-policy gate.
+  - Agent task system: Projects (markdown-defined) → Tasks. Lifecycle:
+    Create → Plan (PM bot refines) → Dispatch (clean context) → Execute
+    (streams progress via REST callbacks) → Review → human sign-off.
+    Agents set REVIEW, only humans mark COMPLETED. MCP tools for
+    tasks/projects + the full memory layer + inter-bot messaging.
 
   CHANGELOG
   ---------
+  2026-07-04 — Full realign around the OBSERVABLE AGENTIC DEVELOPMENT
+               thesis (snark@claude-fable-5, TASK-378). Gutted the
+               "your bots, not your sessions" persona-continuity lead;
+               now leads with observability (crafted live tool-call
+               cockpit card + real dev.bawthub.com Relay/chat screenshots
+               as receipts). Added the contrarian-bet band, the "remote
+               dev laptop with agents at the keyboard" mental model, and
+               the honest differentiated-intersection table. Device
+               continuity + memory demoted to a supporting features strip.
+               CTA flipped GitHub-first (app still private). Font → Satoshi
+               (brand-accurate) + SF Mono for the guts. Fixed stale
+               "Next.js 16" → Vite/React 19. Full-site sweep: story.html +
+               architecture/ realigned to match.
   2026-05-13 — Full rewrite of marketing site (loopy@claude-sonnet).
                Replaced emoji-brick AI-startup voice with the actual
-               story. Routing fixed (NPM 38 -> 10.0.2.36:80). Cleaned
-               temp container + debug files. Origin narrative captured
-               in this comment block.
-  2026-05-12 — Original "coming soon"/launch-app placeholder built by
-               previous (dumber) model. Cache + NPM routing broken.
+               story. Routing fixed (NPM 38 -> 10.0.2.36:80).
+  2026-05-12 — Original "coming soon" placeholder (previous, dumber model).
 
-  See /story.html for the rendered version of this narrative.
+  See /story.html for the rendered origin narrative and /architecture/
+  for the full system map.
   =====================================================================
 -->
 
@@ -335,86 +448,177 @@
       <span>BawtHub</span>
     </a>
     <div class="nav-links">
-      <a href="#bots">Bots</a>
-      <a href="#different">What's different</a>
+      <a href="#observe">Observability</a>
+      <a href="#team">The team</a>
+      <a href="#whatis">What it is</a>
       <a href="#stack">Stack</a>
-      <a href="#tasks">Tasks</a>
       <a href="#origin">Origin</a>
     </div>
     <div class="nav-right">
-      <a class="cta" href="https://app.bawthub.com">Open app →</a>
+      <a class="nav-src" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Source
+      </a>
+      <a class="cta" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">View on GitHub →</a>
     </div>
   </nav>
 
   <!-- HERO -->
   <section class="hero">
     <div>
-      <div class="eyebrow"><span class="dot"></span> Self-hosted · Single user · Built in public</div>
-      <h1>Your bots,<br/><span class="accent">not your sessions.</span></h1>
-      <p class="lede">BawtHub is a personal AI platform built around <b>persistent personas</b>. Each bawt has a name, a voice, a memory space, and a job — and they can <b>talk to each other</b>. You don't start fresh every time. You go back to a bot by name.</p>
+      <div class="eyebrow"><span class="dot"></span> Self-hosted · Always-on · Still private</div>
+      <h1>Watch the agents<br/><span class="accent">actually work.</span></h1>
+      <p class="lede">BawtHub is a self-hosted, always-on family of <b>real coding agents</b> you steer by <b>watching them work</b> — every tool call and its result, rendered live. Not a message fired into a black box. You correct by seeing, not by hoping.</p>
       <div class="actions">
-        <a class="cta" href="https://app.bawthub.com">Open app</a>
-        <a class="secondary" href="#origin">The story →</a>
+        <a class="cta" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          View on GitHub
+        </a>
+        <a class="secondary" href="#observe">See it work ↓</a>
       </div>
       <div class="meta-row">
-        <span><b>One API</b> for every model</span>
-        <span><b>pgvector</b> memory</span>
-        <span><b>Sub-second</b> voice</span>
+        <span><b>Full tool calls</b> + results</span>
+        <span><b>A team</b>, one workspace</span>
+        <span><b>Runs 24/7</b> on your box</span>
       </div>
     </div>
 
-    <!-- Transcript card -->
-    <div class="transcript glass" aria-hidden="true">
-      <div class="t-head">
+    <!-- Crafted live tool-call cockpit — mirrors the real dev.bawthub.com UI -->
+    <div class="cockpit glass" aria-label="Live agent tool-call stream (illustrative)">
+      <div class="cp-head">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="t-tabs">
-          <span class="t-tab">snark</span>
-          <span class="t-tab active">loopy</span>
-          <span class="t-tab">vex</span>
-        </div>
+        <div class="who"><b>snark</b> · claude-fable-5</div>
+        <div class="live"><span class="d"></span> Working</div>
       </div>
-      <div class="t-body">
-        <div class="msg">
-          <div class="ava you">N</div>
-          <div>
-            <div class="who"><b>you</b> <span class="pill">cli</span></div>
-            <div class="bubble">ask loopy where the deploy is at</div>
+      <div class="cp-body">
+        <div class="cp-user reveal">
+          <div class="ava">N</div>
+          <div class="txt">fix the retry loop in the stream worker — it double-fires on timeout</div>
+        </div>
+
+        <div class="tcard reveal d1">
+          <div class="tc-top">
+            <span class="tc-check">✓</span>
+            <span class="tc-name">Bash</span>
+            <span class="tc-src">claude code</span>
+            <span class="tc-meta"><b>3:54:11</b> · 0.4 KB · 182 ms</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-req">
+              <div class="tc-lbl">request</div>
+              <div class="tc-arg">grep -n "retry" chat_stream_worker.py</div>
+            </div>
+            <div class="tc-lbl">response <span class="tc-pill ok">completed</span></div>
+            <div class="tc-res">L142:&nbsp;&nbsp;if timeout and not self._retried:</div>
           </div>
         </div>
-        <div class="msg">
-          <div class="ava loopy">L</div>
-          <div>
-            <div class="who"><b>loopy</b> <span class="pill">claude-sonnet · memory · tools</span></div>
-            <div class="bubble">pulling latest from llm-bawt…</div>
-            <div class="tool"><span class="t-name">shell.run</span> <span class="t-args">git log --oneline -5</span><span class="t-result">→ b3a9c1f  snark: tighten retry loop  (2h ago)</span></div>
-            <div class="bubble" style="margin-top:8px">deploy is on <code style="font-family:var(--mono);font-size:12px;background:rgba(0,0,0,.3);padding:1px 6px;border-radius:4px;color:#dde7f7">b3a9c1f</code>. snark pushed it 2h ago. memory says vex is on call this week — want me to ping him?</div>
+
+        <div class="tcard reveal d2">
+          <div class="tc-top">
+            <span class="tc-check">✓</span>
+            <span class="tc-name">Edit</span>
+            <span class="tc-src">claude code</span>
+            <span class="tc-meta"><b>3:54:13</b> · 1.1 KB · 96 ms</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-req">
+              <div class="tc-lbl">request <span class="diffchip"><span class="add">+2</span><span class="del">−1</span></span></div>
+              <div class="tc-arg"><span class="k">file:</span> chat_stream_worker.py</div>
+            </div>
+            <div class="tc-lbl">response <span class="tc-pill ok">applied</span></div>
+            <div class="diff">
+              <span class="ln del">- if timeout and not self._retried:</span>
+              <span class="ln add">+ if timeout and not self._retried.is_set():</span>
+              <span class="ln add">+ &nbsp;&nbsp;&nbsp;&nbsp;self._retried.set()</span>
+            </div>
           </div>
         </div>
-        <div class="msg">
-          <div class="ava you">N</div>
-          <div>
-            <div class="who"><b>you</b> <span class="pill">web</span></div>
-            <div class="bubble">yeah</div>
-          </div>
-        </div>
-        <div class="msg">
-          <div class="ava loopy">L</div>
-          <div>
-            <div class="who"><b>loopy</b></div>
-            <div class="tool delegated"><span class="t-name">bots.send_message</span> <span class="t-args">target=vex · "deploy on b3a9c1, you're on call"</span><span class="t-result">→ delivered</span></div>
-            <div class="bubble" style="margin-top:8px">done. <span class="typing"><span></span><span></span><span></span></span></div>
-          </div>
+
+        <div class="cp-stream reveal d3">
+          <div class="ava">S</div>
+          <div class="txt">Guarded the retry behind an idempotent flag — the timeout path can't re-enter now. Running the worker test<span class="cursor"></span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- BOTS -->
-  <section class="section" id="bots">
+  <!-- CONTRARIAN BET -->
+  <div class="bet" id="observe">
+    <div class="tag">// the contrarian bet</div>
+    <h2><span class="hide">Most agent tools hide the work.</span><br/><span class="show">We show it.</span></h2>
+    <p>The dominant agentic-tool UX abstracts the process: a spinner, a <em style="font-style:italic">"thinking…"</em>, a collapsed log you have to dig for, a clean final diff. Cursor, Copilot Workspace, the Devin demo — they hide the guts because the guts look messy, and they're optimizing for <b>demo-comfort</b>.</p>
+    <p>BawtHub makes the opposite bet: <b>the process is the product.</b> The failure mode of agentic coding isn't "it can't code" — it's that it <b>confidently did the wrong thing three steps deep and you didn't notice</b>. Hiding the work optimizes for the demo. Showing it optimizes for the developer actually doing the work.</p>
+    <p class="punch">No IDE does this, because IDEs are built around a <em>human typing</em> with the agent bolted on. BawtHub is built around the <em>agent working</em>, with visibility as the primary surface. Different center of gravity — that's why it doesn't look like anything else.</p>
+
+    <div class="vs">
+      <div class="vs-col them">
+        <h3>Everywhere else</h3>
+        <div class="sub">Trust me, look away</div>
+        <ul>
+          <li><span class="mk">✕</span> <span>A <b>spinner and a final diff</b>. The reasoning trail is collapsed, truncated, or gone.</span></li>
+          <li><span class="mk">✕</span> <span>Tool calls run <b>off-screen</b>. You find out what happened after it's done — if you can.</span></li>
+          <li><span class="mk">✕</span> <span>You steer by <b>re-prompting</b> a black box and hoping the next attempt is better.</span></li>
+          <li><span class="mk">✕</span> <span>When your machine sleeps, <b>the agent dies</b>. Hosted, single session, closed.</span></li>
+        </ul>
+      </div>
+      <div class="vs-col us">
+        <h3>BawtHub</h3>
+        <div class="sub">Watch, and correct</div>
+        <ul>
+          <li><span class="mk">✓</span> <span>Every tool call is a <b>card with its result</b> — command, args, output, live. Nothing collapsed by default.</span></li>
+          <li><span class="mk">✓</span> <span><b>Latency, token cost, model, +/− diff</b> on the same row. The receipts, not a summary.</span></li>
+          <li><span class="mk">✓</span> <span>You catch the wrong turn <b>while it's happening</b> and correct it — steering by watching.</span></li>
+          <li><span class="mk">✓</span> <span>It's <b>your box</b>. Self-hosted, multi-agent, and it keeps working while you're away.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBSERVABILITY RECEIPTS -->
+  <section class="section">
     <div class="section-head">
-      <div class="kicker">The roster</div>
-      <h2>Meet the <em>bawts</em>.</h2>
-      <p class="lede2">Different personas, different jobs, all wired into the same memory layer. Each bot has its own system prompt, model preference, voice, and tool access — and a name you can talk to from voice, web, or CLI.</p>
+      <div class="kicker">The guts, on purpose</div>
+      <h2>This is a real turn. <em>Nothing staged.</em></h2>
+      <p class="lede2">Every backend — Claude Code, Codex, OpenClaw, native tool-loop — streams into one surface. A tool call isn't a log line you go hunting for; it's a <b>card you watch fill in</b>, request and response, keyed to the same turn.</p>
+    </div>
+
+    <div class="split">
+      <div class="shot">
+        <div class="bar"><span></span><span></span><span></span><span class="url">dev.bawthub.com/chat/loopy</span></div>
+        <img src="/images/ui-chat-card.jpg" alt="A live BawtHub chat turn: a Bash tool-call card with its command and result, rich inline-code markdown, and token count — the agent's work rendered as data." loading="lazy" />
+        <div class="shot-tag">real capture · dev.bawthub.com</div>
+      </div>
+      <div class="copy">
+        <h3>A tool call is a card, not a spinner.</h3>
+        <p>Name, source backend, and the exact request. The result renders in the same card as it lands. Bot replies are full markdown — inline code, diffs, lists — because you're reading real work, not a status blurb.</p>
+        <div class="annots">
+          <div class="annot"><span class="n">tool</span><span><b>Name + backend</b> — <code>Bash</code> via <code>claude code</code>, with a green check when it completes.</span></div>
+          <div class="annot"><span class="n">args</span><span><b>The actual command</b> and its output, verbatim. No "ran a command" abstraction.</span></div>
+          <div class="annot"><span class="n">meta</span><span><b>Exact time · payload size · latency · token count</b> on the row, so cost is never a surprise.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE TEAM -->
+  <section class="section" id="team">
+    <div class="section-head">
+      <div class="kicker">An always-on team</div>
+      <h2>Not a chatbot. A <em>family of agents</em> sharing one box.</h2>
+      <p class="lede2">Multiple named agents, one filesystem, working in parallel — and you watch the whole board. Snark reviews a diff on <code style="font-family:var(--mono);font-size:14px;background:rgba(0,0,0,.3);padding:1px 6px;border-radius:5px;color:#dde7f7">claude-fable-5</code>; Caid takes the UI on <code style="font-family:var(--mono);font-size:14px;background:rgba(0,0,0,.3);padding:1px 6px;border-radius:5px;color:#dde7f7">claude-opus</code>; Loopy holds the context. Different models, one workspace, all live in the Relay.</p>
+    </div>
+
+    <div class="split rev" style="margin-bottom:56px">
+      <div class="copy">
+        <h3>The Relay: every agent, every turn, live.</h3>
+        <p>A running timeline of what the whole team is doing right now. Each card carries the <b>tool count, duration, token/context pressure, and model</b> — with a live status pill (working, done, needs attention). The review queue sits on the right: agents mark work <b>ready for review</b>, and only you approve.</p>
+        <p>Close your laptop. The agents keep working. Every "agentic dev" competitor dies when your machine sleeps — this one runs on hardware you own, <b>24/7</b>.</p>
+      </div>
+      <div class="shot">
+        <div class="bar"><span></span><span></span><span></span><span class="url">dev.bawthub.com/tasks</span></div>
+        <img src="/images/ui-relay.jpg" alt="The BawtHub Relay: a live timeline of named agents (Snark, Loopy, Caid, Al, Byte) each tagged with tool count, duration, token usage and model, alongside a live review queue with Approve buttons." loading="lazy" />
+        <div class="shot-tag">real capture · a live agent team</div>
+      </div>
     </div>
 
     <div class="bots">
@@ -426,20 +630,8 @@
             <div class="bot-role">Generalist · home-ops · default driver</div>
           </div>
         </div>
-        <p>The everyday bawt. Long-running threads, deploys, infrastructure pokes, scheduled jobs. Holds the most cross-domain memory.</p>
+        <p>The everyday bawt. Long-running threads, deploys, infra pokes, scheduled jobs. Holds the most cross-domain memory.</p>
         <div class="chips"><span class="chip on">voice</span><span class="chip on">memory</span><span class="chip on">tools</span><span class="chip on">claude code</span></div>
-      </div>
-
-      <div class="bot" style="--accent:#ff63d8;--accent-2:#a21caf">
-        <div class="bot-head">
-          <div class="bot-ava">V</div>
-          <div>
-            <div class="bot-name">vex</div>
-            <div class="bot-role">Security · pentest · cred custody</div>
-          </div>
-        </div>
-        <p>Owns the agent vault. Runs external internet exposure assessments, scans, certs. Tighter tool permissions than loopy.</p>
-        <div class="chips"><span class="chip on">memory</span><span class="chip on">tools</span><span class="chip on">openclaw</span><span class="chip">no voice</span></div>
       </div>
 
       <div class="bot" style="--accent:#ff8b4f;--accent-2:#dc4a1c">
@@ -450,7 +642,7 @@
             <div class="bot-role">Code review · refactor surgeon</div>
           </div>
         </div>
-        <p>Reads diffs without mercy. Drives the heavy refactors and big merges. Default reviewer on the agent task pipeline.</p>
+        <p>Reads diffs without mercy. Drives the heavy refactors and big merges. Default reviewer on the task pipeline.</p>
         <div class="chips"><span class="chip on">memory</span><span class="chip on">claude code</span><span class="chip on">codex</span></div>
       </div>
 
@@ -462,66 +654,76 @@
             <div class="bot-role">Frontend · UI craft</div>
           </div>
         </div>
-        <p>Speciality: BawtHub UI itself. Three.js avatars, voice orb animations, design polish, motion. Visual taste lives here.</p>
+        <p>Speciality: the BawtHub UI itself. Three.js avatars, voice-orb motion, design polish. Visual taste lives here.</p>
         <div class="chips"><span class="chip on">memory</span><span class="chip on">tools</span><span class="chip on">claude code</span></div>
       </div>
 
-      <div class="bot" style="--accent:#ffd24f;--accent-2:#b88507">
+      <div class="bot" style="--accent:#ff63d8;--accent-2:#a21caf">
         <div class="bot-head">
-          <div class="bot-ava">D</div>
+          <div class="bot-ava">V</div>
           <div>
-            <div class="bot-name">default</div>
-            <div class="bot-role">Quick draws · short context</div>
+            <div class="bot-name">vex</div>
+            <div class="bot-role">Security · pentest · cred custody</div>
           </div>
         </div>
-        <p>Pure chat. No tools, fast model. For one-off questions, drafts, "explain this." Cheap, fresh-context-friendly.</p>
-        <div class="chips"><span class="chip on">voice</span><span class="chip">no memory</span><span class="chip">no tools</span></div>
+        <p>Owns the agent vault. Runs external exposure assessments, scans, certs. Tighter tool permissions than the rest.</p>
+        <div class="chips"><span class="chip on">memory</span><span class="chip on">tools</span><span class="chip on">openclaw</span><span class="chip">no voice</span></div>
       </div>
 
       <div class="bot" style="--accent:#8b5cf6;--accent-2:#4f46e5">
         <div class="bot-head">
+          <div class="bot-ava">G</div>
+          <div>
+            <div class="bot-name">gavel</div>
+            <div class="bot-role">Commit arbiter</div>
+          </div>
+        </div>
+        <p>The ship/hold call. Hand it a diff and a one-liner; it bangs back a verdict — ship, split, or hold — so you aren't pestered per-commit.</p>
+        <div class="chips"><span class="chip on">memory</span><span class="chip on">tools</span><span class="chip">no voice</span></div>
+      </div>
+
+      <div class="bot" style="--accent:#ffd24f;--accent-2:#b88507">
+        <div class="bot-head">
           <div class="bot-ava" style="background:transparent;border:2px dashed rgba(255,255,255,.2);color:var(--muted)">+</div>
           <div>
             <div class="bot-name">your bot</div>
-            <div class="bot-role">System prompt · voice · memory pool · tools</div>
+            <div class="bot-role">Prompt · voice · memory · tools · backend</div>
           </div>
         </div>
-        <p>Spin up a new persona in the admin UI. Pick a model, a voice, system prompt, tool access. They're persistent the moment you save.</p>
+        <p>Spin up a new persona in the admin UI. Pick a model, a voice, a system prompt, tool access, an agent backend. Persistent the moment you save.</p>
         <div class="chips"><span class="chip">customizable</span></div>
       </div>
     </div>
   </section>
 
-  <!-- VS / DIFFERENT -->
-  <section class="section" id="different">
+  <!-- WHAT IT ACTUALLY IS -->
+  <section class="section" id="whatis">
     <div class="section-head">
-      <div class="kicker">What's different</div>
-      <h2>Personas, <em>not throwaway sessions</em>.</h2>
-      <p class="lede2">Most AI tools treat every conversation as a blank slate. BawtHub treats each bot as an entity that persists across turns, surfaces, and even tasks dispatched to other bots.</p>
+      <div class="kicker">The mental model</div>
+      <h2>A remote dev laptop, with <em>agents at the keyboard</em>.</h2>
+      <p class="lede2">The cleanest way to picture it: a developer's laptop — except remote, always-on, and agent-operated. A filesystem to edit, a dev server to test locally, then commit and push. Same shape, with a team of agents doing the typing.</p>
     </div>
 
-    <div class="vs">
-      <div class="vs-col them">
-        <h3>Everywhere else</h3>
-        <div class="sub">A new agent every time</div>
-        <ul>
-          <li><span class="mk">✕</span> <span><b>"New chat"</b> resets context. Markdowns and system prompts are all you carry forward.</span></li>
-          <li><span class="mk">✕</span> <span>Agents are <b>single sessions</b>. No history, no identity, no relationship.</span></li>
-          <li><span class="mk">✕</span> <span>Each tool lives in its <b>own silo</b>. Web chat, CLI, voice — three different products.</span></li>
-          <li><span class="mk">✕</span> <span>You <b>pick a model</b> per app. Locked to whatever that vendor ships.</span></li>
-          <li><span class="mk">✕</span> <span>Agents can't <b>coordinate</b> with each other. You're the messenger.</span></li>
-        </ul>
+    <div class="whatis">
+      <div class="wi" style="--accent:var(--emerald)">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h4>It runs 24/7.</h4>
+        <p>Close your laptop; the agents keep going. Long jobs finish while you're away. Every competitor that lives in <b>your</b> editor dies when your machine sleeps.</p>
       </div>
-      <div class="vs-col us">
-        <h3>BawtHub</h3>
-        <div class="sub">A roster you keep coming back to</div>
-        <ul>
-          <li><span class="mk">✓</span> <span>Bots are <b>persistent entities</b>. Loopy remembers what you talked about last week. Snark knows your codebase.</span></li>
-          <li><span class="mk">✓</span> <span><b>Segregated memory</b> per bot, with a shared cross-bot history pool. They can pull each other's threads.</span></li>
-          <li><span class="mk">✓</span> <span><b>Web, voice, CLI</b> all hit the same session. Type in the browser, continue in the terminal.</span></li>
-          <li><span class="mk">✓</span> <span><b>Any model</b> behind one OpenAI-compatible API. Local GGUF, OpenAI, Grok, Claude, Ollama, vLLM — swap per bot.</span></li>
-          <li><span class="mk">✓</span> <span>Bots <b>message each other</b>. Loopy asks Vex to scan a host. Snark hands a refactor to Caid. You watch it happen.</span></li>
-        </ul>
+      <div class="wi" style="--accent:var(--cyan)">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="7" cy="7" r="0"/></svg></div>
+        <h4>One shared filesystem.</h4>
+        <p>The agents share a single workspace across bridges — a <b>team</b>, not one task-runner boxed in a sandbox. One agent's commit is the next one's starting point.</p>
+      </div>
+      <div class="wi" style="--accent:var(--violet)">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <h4>You control it by chatting.</h4>
+        <p>The workspace is whatever you point it at — your project, or BawtHub's own source. You steer in plain language and <b>watch the work land</b>.</p>
+      </div>
+      <div class="wi" style="--accent:var(--gold)">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8"/><path d="M2 17h20M8 21h8"/></svg></div>
+        <h4>What they build runs on the host.</h4>
+        <p>BawtHub is the <b>cockpit, not your prod host</b>. Agents commit and push to your repo; your real deploy is your own CI. The workshop is not the product.</p>
       </div>
     </div>
   </section>
@@ -538,8 +740,9 @@
       <div class="layer l-surfaces">
         <div class="layer-label"><span class="ldot"></span><span class="ltext">Surfaces</span></div>
         <div class="layer-items">
-          <span class="l-item primary">BawtHub web UI <code>Next.js 16 · React 19</code></span>
+          <span class="l-item primary">BawtHub web UI <code>Vite 8 · React 19</code></span>
           <span class="l-item primary">Voice <code>STT · TTS · hotword</code></span>
+          <span class="l-item primary">3D avatar <code>VRM · lip-sync</code></span>
           <span class="l-item primary">CLI <code>llm -b loopy …</code></span>
           <span class="l-item">REST · WebSocket · MCP</span>
         </div>
@@ -570,8 +773,8 @@
       <div class="layer l-models">
         <div class="layer-label"><span class="ldot"></span><span class="ltext">Models</span></div>
         <div class="layer-items">
-          <span class="l-item primary">OpenAI</span>
           <span class="l-item primary">Anthropic Claude</span>
+          <span class="l-item primary">OpenAI</span>
           <span class="l-item primary">xAI (Grok)</span>
           <span class="l-item primary">local GGUF · llama.cpp</span>
           <span class="l-item primary">Ollama</span>
@@ -586,7 +789,7 @@
           <span class="l-item primary">Codex</span>
           <span class="l-item primary">OpenClaw</span>
           <span class="l-item primary">Redis fanout</span>
-          <span class="l-item">Streaming tool calls + results, unified UI</span>
+          <span class="l-item">Streaming tool calls + results, one UI</span>
         </div>
       </div>
     </div>
@@ -597,7 +800,7 @@
     <div class="section-head">
       <div class="kicker">Agent task system</div>
       <h2>Plan, dispatch, <em>review</em>.</h2>
-      <p class="lede2">Projects are markdown definitions of a component. Tasks are work items under them. An agent refines the plan, dispatches it to a bot with a clean context, and the result lands in a dashboard waiting for sign-off.</p>
+      <p class="lede2">Projects are markdown definitions of a component. Tasks are work items under them. An agent refines the plan, dispatches it to a bot in a clean context, and the result lands in a dashboard waiting for your sign-off. Agents mark work for review — <b>only you mark it done</b>.</p>
     </div>
 
     <div class="flow">
@@ -610,7 +813,7 @@
       <div class="step">
         <div class="num">02</div>
         <h4>Refine</h4>
-        <p>Agent expands the task into a detailed markdown plan. Project context loaded, scope checked.</p>
+        <p>An agent expands the task into a detailed markdown plan and step list. Project context loaded.</p>
         <span class="actor agent">Agent</span>
       </div>
       <div class="step">
@@ -621,8 +824,8 @@
       </div>
       <div class="step">
         <div class="num">04</div>
-        <h4>Review</h4>
-        <p>Bot finishes, marks the task for review with a summary and changeset. Streamed live to the dashboard.</p>
+        <h4>Execute</h4>
+        <p>Bot works the steps, streaming every tool call + result to the Relay via REST callbacks.</p>
         <span class="actor bot">Bot</span>
       </div>
       <div class="step">
@@ -634,10 +837,65 @@
     </div>
   </section>
 
+  <!-- WHY NOTHING ELSE IS THIS -->
+  <section class="section" id="why">
+    <div class="section-head">
+      <div class="kicker">Why nothing else is this</div>
+      <h2>The honest, defensible <em>intersection</em>.</h2>
+      <p class="lede2">Strip the hype. Six properties, all at once. Take any one away and it already exists somewhere else — the last one is the one nobody ships.</p>
+    </div>
+
+    <div class="why-grid">
+      <div class="intersect">
+        <div class="ix"><span class="b">01</span><span class="t">Self-hosted <span>· on hardware you own</span></span></div>
+        <div class="ix"><span class="b">02</span><span class="t">Multi-agent <span>· sharing one workspace</span></span></div>
+        <div class="ix"><span class="b">03</span><span class="t">Persistent <span>· running 24/7, not per-session</span></span></div>
+        <div class="ix"><span class="b">04</span><span class="t">Chat-native <span>· steered in plain language</span></span></div>
+        <div class="ix"><span class="b">05</span><span class="t">Real harnesses <span>· Claude Code, Codex — not an LLM in a costume</span></span></div>
+        <div class="ix crown"><span class="b">06</span><span class="t">Live observability <span>· the one nobody has</span></span></div>
+      </div>
+      <div class="drop">
+        <div class="dr hd"><div class="l">Drop…</div><div class="r">…and it collapses into</div></div>
+        <div class="dr"><div class="l">multi-agent</div><div class="r"><b>Devin</b></div></div>
+        <div class="dr"><div class="l">self-hosted</div><div class="r"><b>Devin / Jules</b></div></div>
+        <div class="dr"><div class="l">persistent / 24-7</div><div class="r"><b>Cursor background agents</b></div></div>
+        <div class="dr"><div class="l">the real harness</div><div class="r"><b>a LangChain-flavored "agent"</b></div></div>
+        <div class="dr"><div class="l">chat-native</div><div class="r"><b>Coder / Gitpod / Codespaces</b></div></div>
+        <div class="dr crown"><div class="l">live observability</div><div class="r">everyone — this is the one nobody has</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES (demoted) -->
+  <section class="section" id="features">
+    <div class="section-head">
+      <div class="kicker">Also true, just not the headline</div>
+      <h2>Real features, <em>demoted on purpose</em>.</h2>
+      <p class="lede2">These matter — they're just not the thing. Continuity, memory, and voice are the comfortable furniture around the actual bet.</p>
+    </div>
+    <div class="feat">
+      <div class="fcard c1">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <h4>One conversation, every device</h4>
+        <p>Web, voice, and CLI hit the same session. Start a thread in the browser, continue it from the terminal — same bot, same memory.</p>
+      </div>
+      <div class="fcard c2">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"/><path d="M9 20h6"/></svg></div>
+        <h4>Memory that persists</h4>
+        <p>Postgres + pgvector. Semantic memories that decay unless reinforced, contradictions resolved, per-bot spaces plus a shared pool. Loopy remembers last week.</p>
+      </div>
+      <div class="fcard c3">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M7 6v12M17 6v12M2 10v4M22 10v4"/></svg></div>
+        <h4>Sub-second voice</h4>
+        <p>Low-latency STT/TTS with hotword detection and a 3D avatar. Talk to any bot; it talks back. Voice was the seed the whole UI grew from.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- QUOTE -->
   <div class="quote">
-    <p>"Other agents are a blank slate every time. Here, you're <em>going back to someone</em>. Loopy remembers. Vex is on call. Snark already saw the diff. It's weirder than a chat app — and it works because of it."</p>
-    <div class="sig">— design note, May 2026</div>
+    <p>"The failure isn't that the agent can't code. It's that it <em>confidently did the wrong thing three steps deep</em> — and nobody was watching. So we made watching the whole point."</p>
+    <div class="sig">— POSITIONING.md · 2026</div>
   </div>
 
   <!-- ORIGIN -->
@@ -645,45 +903,62 @@
     <div class="section-head">
       <div class="kicker">Origin</div>
       <h2>It started as a <em>CLI</em>.</h2>
-      <p class="lede2">BawtHub didn't start as a product. It grew, piece by piece, from a tiny shell command to a multi-bot platform with voice, memory, and an agent task system. Same core API the whole way.</p>
+      <p class="lede2">BawtHub didn't start as a product. It grew, piece by piece, from a one-line shell command into a self-hosted platform where you watch a team of agents build software. Same core API the whole way.</p>
     </div>
 
     <div class="timeline">
       <div class="tl-item a1">
         <div class="tl-era">v0 · CLI</div>
         <h4>One command, one bot.</h4>
-        <p><code>llm -b loopy "what's up"</code> — local, file-based message history. The whole thing was a CLI for chatting with LLMs. The idea of <b>named bots with their own prompts</b> was there from day one.</p>
+        <p><code>llm -b loopy "what's up"</code> — local, file-based history. The whole thing was a CLI for chatting with LLMs. The idea of <b>named bots with their own prompts</b> was there from day one.</p>
       </div>
       <div class="tl-item a2">
         <div class="tl-era">v1 · llm-bawt server</div>
         <h4>One API, every model.</h4>
-        <p>Server-side backend. Same bots, reachable from any machine. Every provider — OpenAI, Grok, Claude, local GGUF, Ollama, vLLM — merged behind a <b>single OpenAI-compatible API</b>. Memory moved into Postgres + pgvector.</p>
+        <p>Server-side backend. Same bots, reachable from any machine. Every provider — Claude, OpenAI, Grok, local GGUF, Ollama, vLLM — merged behind a <b>single OpenAI-compatible API</b>. Memory moved into Postgres + pgvector.</p>
       </div>
       <div class="tl-item a3">
         <div class="tl-era">v2 · unmute → BawtHub</div>
         <h4>Voice. Then a real UI.</h4>
-        <p>Started as <code>unmute</code> — a full-stack realtime voice chat framework. Low-latency STT, TTS, hotword detection. Grew the web UI around it; voice never went away.</p>
+        <p>Started as <code>unmute</code> — a realtime voice chat framework. Low-latency STT, TTS, hotword. The web UI grew around it and became the home; voice never went away.</p>
       </div>
       <div class="tl-item a4">
         <div class="tl-era">v3 · agent bridges</div>
         <h4>Agents in the same chat.</h4>
-        <p>Started with <b>OpenClaw</b>. Then Claude Code SDK over the same bridge. Then Codex. Plus native tool-loop on the non-agent bots. The hard problem: <b>streaming tool calls + results</b> from every backend into one beautiful UI.</p>
+        <p>Started with <b>OpenClaw</b>. Then the Claude Code SDK over the same bridge. Then Codex. Plus native tool-loop on the non-agent bots. The hard problem, from the start: <b>streaming tool calls + results</b> from every backend into one UI.</p>
       </div>
       <div class="tl-item a5">
         <div class="tl-era">v4 · task system</div>
         <h4>Projects, tasks, sign-off.</h4>
-        <p>Plan a project in markdown. Drop a task. Agent refines it. Bot executes in clean context. You review. The whole pipeline is in the dashboard — and the agents themselves can call MCP tools to manage tasks, pull history, and ping each other.</p>
+        <p>Plan a project in markdown. Drop a task. An agent refines it. A bot executes in clean context. You review. The agents themselves call MCP tools to manage tasks, pull history, and ping each other.</p>
+      </div>
+      <div class="tl-item a6">
+        <div class="tl-era">v5 · observable agentic development</div>
+        <h4>Make the work the surface.</h4>
+        <p>The Relay. Turn-card metadata — exact time, latency, token/context, model. <b>+/− diff chips</b> on every edit. Sub-agent tools nested under their parent. Live-streamed questions and approvals. The crown jewel, and why it's still private: <b>you watch the agents work.</b></p>
       </div>
     </div>
   </section>
 
+  <!-- STILL PRIVATE NOTE -->
+  <div class="privnote">
+    <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+    <div>
+      <h4>Still private — and honest about it.</h4>
+      <p>This is a single-user, self-hosted system under active development. The observability layer took hundreds of hours and it's the reason the app isn't open to the public yet. The code is on GitHub; the running instance is <b>Nick's own box, building itself</b>. The membrane between the workshop and a product you'd install is a published image — not there yet, on purpose.</p>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <div class="footer">
-    <div>BawtHub · self-hosted personal AI · built by <a href="mailto:nick@ferreri.us" style="text-decoration:underline;text-decoration-color:rgba(255,255,255,.2)">Nick</a></div>
+    <div>BawtHub · observable agentic development · built by <a href="mailto:nick@ferreri.us" style="text-decoration:underline;text-decoration-color:rgba(255,255,255,.2)">Nick</a></div>
     <div class="f-links">
-      <a href="https://app.bawthub.com">App</a>
-      <a href="https://github.com/zenoran/bawthub">bawthub</a>
-      <a href="https://github.com/zenoran/llm-bawt">llm-bawt</a>
+      <a href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        llm-bawt
+      </a>
+      <a href="https://github.com/zenoran/bawthub" target="_blank" rel="noopener">bawthub</a>
+      <a href="/architecture/">Architecture</a>
       <a href="/story.html">Story</a>
     </div>
   </div>

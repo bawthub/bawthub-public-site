@@ -7,7 +7,7 @@
 <meta name="description" content="The BawtHub agent task system: projects, tasks, steps, dispatch, and the MCP tool surface that lets agents plan and execute their own work — without the human ever leaving the chat UI." />
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-<link rel="stylesheet" href="/architecture/assets/site.css?v=4" />
+<link rel="stylesheet" href="/architecture/assets/site.css?v=5" />
 </head>
 <body>
 
@@ -30,7 +30,7 @@
   <div class="page-head">
     <div class="kicker"><span class="dot"></span> agents · task system</div>
     <h1 class="page-title">Plan, dispatch, review. <em>Repeat.</em></h1>
-    <p class="lede">Agents in BawtHub don't live in a separate task tracker. The same Next.js app that renders chat also owns a full project / task / step model — and every operation on it is exposed twice: once as a REST endpoint for the UI, once as an MCP tool for the agents themselves. A bot can plan its own follow-up work, queue dependent tasks, mark its own steps complete, and hand off to another bot — all without a human round-trip.</p>
+    <p class="lede">Agents in BawtHub don't live in a separate task tracker. The same web app that renders chat also owns a full project / task / step model — and every operation on it is exposed twice: once as a REST endpoint for the UI, once as an MCP tool for the agents themselves. A bot can plan its own follow-up work, queue dependent tasks, mark its own steps complete, and hand off to another bot — all without a human round-trip.</p>
     <div class="meta">
       <span><b>Storage:</b> Postgres + Prisma</span>
       <span><b>Dispatch:</b> <code>POST /api/agents/tasks/[id]/dispatch</code> → <code>after()</code> background job</span>
