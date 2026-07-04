@@ -10,7 +10,9 @@
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://bawthub.com" />
 <meta name="theme-color" content="#050a13" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b5cf6'/%3E%3Cstop offset='.5' stop-color='%234fd1ff'/%3E%3Cstop offset='1' stop-color='%234fffd1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='40' height='40' rx='12' fill='url(%23g)'/%3E%3Ctext x='20' y='28' font-size='22' font-family='sans-serif' font-weight='800' fill='%23081018' text-anchor='middle'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" sizes="192x192" href="/images/app-icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/images/app-icon.png" />
+<link rel="apple-touch-icon" href="/images/app-icon.png" />
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
 <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&display=swap" />
@@ -42,7 +44,7 @@
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  html,body{margin:0;background:radial-gradient(1200px 720px at 80% -10%, #1a2750 0%, transparent 55%),radial-gradient(900px 560px at 0% 0%, #2a1758 0%, transparent 60%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  html,body{margin:0;background:radial-gradient(1200px 720px at 80% -10%, #1a2750 0%, transparent 55%),radial-gradient(900px 560px at 0% 0%, #2a1758 0%, transparent 60%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);background-color:#050a13;color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   body{min-height:100vh;overflow-x:hidden}
   a{color:inherit;text-decoration:none}
   code{font-family:var(--mono)}
@@ -56,9 +58,7 @@
   /* NAV */
   .nav{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-bottom:56px}
   .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.01em;font-size:18px}
-  .logo{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:conic-gradient(from 220deg, var(--violet), var(--cyan), var(--teal), var(--violet));box-shadow:0 12px 36px rgba(91,111,255,.4),inset 0 0 0 1px rgba(255,255,255,.15);font-size:18px;color:#fff;position:relative}
-  .logo::after{content:"";position:absolute;inset:3px;border-radius:11px;background:#0a1322}
-  .logo span{position:relative;z-index:1;font-weight:800}
+  .logo{width:40px;height:40px;border-radius:12px;object-fit:cover;display:block;box-shadow:0 12px 36px rgba(91,111,255,.4),inset 0 0 0 1px rgba(255,255,255,.15)}
   .nav-links{display:flex;gap:28px;font-size:14px;color:var(--muted)}
   .nav-links a{transition:color .15s}
   .nav-links a:hover{color:var(--text)}
@@ -443,7 +443,7 @@
   <!-- NAV -->
   <nav class="nav">
     <a class="brand" href="/">
-      <span class="logo"><span>✦</span></span>
+      <img class="logo" src="/images/app-icon.png" alt="BawtHub app icon" width="40" height="40" />
       <span>BawtHub</span>
     </a>
     <div class="nav-links">
