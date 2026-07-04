@@ -86,56 +86,9 @@
   .meta-row span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
   .meta-row span b{color:var(--text);font-weight:600}
 
-  /* GLASS + TOOL-CALL HERO CARD (crafted to match the real app) */
-  .glass{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(18px);box-shadow:0 24px 80px rgba(0,0,0,0.45)}
-  .cockpit{border-radius:22px;overflow:hidden;position:relative;background:radial-gradient(circle at 82% -5%,rgba(79,209,255,.14),transparent 38%),radial-gradient(circle at 0% 100%,rgba(139,92,246,.18),transparent 42%),rgba(8,15,28,.9)}
-  .cp-head{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line)}
-  .cp-head .dots{display:flex;gap:7px}
-  .cp-head .dots span{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.16)}
-  .cp-head .dots span:nth-child(1){background:rgba(255,111,125,.7)}
-  .cp-head .dots span:nth-child(2){background:rgba(255,210,79,.7)}
-  .cp-head .dots span:nth-child(3){background:rgba(101,232,155,.7)}
-  .cp-head .who{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
-  .cp-head .who b{color:#dde7f7;font-weight:600}
-  .cp-head .live{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--emerald);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-  .cp-head .live .d{width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald);animation:pulse 1.6s infinite}
-  .cp-body{padding:16px;display:grid;gap:11px}
-  .cp-user{display:flex;gap:10px;align-items:flex-start;font-size:13.5px}
-  .cp-user .ava{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#4a5568,#2d3748);color:#cbd5e0;display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
-  .cp-user .txt{color:#dde7f7;padding-top:3px}
-
-  /* tool card */
-  .tcard{border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.28);overflow:hidden}
-  .tcard + .tcard{margin-top:2px}
-  .tc-top{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
-  .tc-check{width:16px;height:16px;border-radius:50%;background:rgba(52,211,153,.16);color:var(--emerald);display:grid;place-items:center;font-size:10px;flex:none}
-  .tc-name{font-family:var(--mono);font-size:12.5px;color:var(--cyan);font-weight:600}
-  .tc-src{font-size:11px;color:var(--dim);font-style:italic}
-  .tc-meta{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--dim);white-space:nowrap}
-  .tc-meta b{color:var(--muted);font-weight:500}
-  .tc-body{padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#b6c8e2}
-  .tc-lbl{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;display:flex;align-items:center;gap:7px}
-  .tc-pill{padding:1px 7px;border-radius:999px;font-size:9px;font-weight:600;letter-spacing:.02em;text-transform:none}
-  .tc-pill.ok{background:rgba(52,211,153,.14);color:var(--emerald)}
-  .tc-arg{color:#dde7f7}
-  .tc-arg .k{color:var(--muted)}
-  .tc-req{padding-bottom:9px;border-bottom:1px dashed rgba(255,255,255,.07);margin-bottom:9px}
-  .diffchip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;padding:1px 8px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid var(--line);margin-left:8px}
-  .diffchip .add{color:var(--emerald)}
-  .diffchip .del{color:var(--red)}
-  .diff{margin-top:2px}
-  .diff .ln{display:block;padding:0 6px;border-radius:3px}
-  .diff .add{background:rgba(52,211,153,.1);color:#9df3cf}
-  .diff .del{background:rgba(255,111,125,.09);color:#ffb0b8}
-  .tc-res{color:#9df3cf}
-  .cp-stream{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;padding-top:2px}
-  .cp-stream .ava{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--orange),#dc4a1c);color:#0a1322;display:grid;place-items:center;font-weight:800;font-size:12px;flex:none}
-  .cp-stream .txt{color:#dde7f7;padding-top:3px}
-  .cursor{display:inline-block;width:7px;height:15px;background:var(--cyan);margin-left:2px;vertical-align:-2px;animation:caret 1.05s step-end infinite;box-shadow:0 0 8px var(--cyan)}
-  @keyframes caret{0%,100%{opacity:1}50%{opacity:0}}
-  .reveal{animation:rise .5s both}
-  .reveal.d1{animation-delay:.15s}.reveal.d2{animation-delay:.7s}.reveal.d3{animation-delay:1.5s}.reveal.d4{animation-delay:2.3s}
-  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  /* hero media frame — holds the real screenshot (or a swapped-in <video>) */
+  .hero-shot img{height:440px;object-fit:cover;object-position:top left}
+  .hero-shot video{display:block;width:100%;height:440px;object-fit:cover;object-position:top left}
 
   /* SECTION SHELL */
   .section{margin:120px 0;position:relative}
@@ -423,12 +376,19 @@
 
   CHANGELOG
   ---------
+  2026-07-04b — Removed the crafted/fabricated hero tool-call card (Nick:
+               "no fake crap in my site"). Hero now shows a REAL
+               dev.bawthub.com capture in a browser frame, structured
+               video-ready (swap <img> -> <video> when a recorded demo
+               exists — see the comment in the hero markup). All six page
+               images are real captures now; deleted ~65 lines of dead
+               cockpit CSS.
   2026-07-04 — Full realign around the OBSERVABLE AGENTIC DEVELOPMENT
                thesis (snark@claude-fable-5, TASK-378). Gutted the
                "your bots, not your sessions" persona-continuity lead;
-               now leads with observability (crafted live tool-call
-               cockpit card + real dev.bawthub.com Relay/chat screenshots
-               as receipts). Added the contrarian-bet band, the "remote
+               now leads with observability (real dev.bawthub.com Relay/
+               chat/tool-call screenshots as receipts + surface gallery).
+               Added the contrarian-bet band, the "remote
                dev laptop with agents at the keyboard" mental model, and
                the honest differentiated-intersection table. Device
                continuity + memory demoted to a supporting features strip.
@@ -490,62 +450,17 @@
       </div>
     </div>
 
-    <!-- Crafted live tool-call cockpit — mirrors the real dev.bawthub.com UI -->
-    <div class="cockpit glass" aria-label="Live agent tool-call stream (illustrative)">
-      <div class="cp-head">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <div class="who"><b>snark</b> · claude-fable-5</div>
-        <div class="live"><span class="d"></span> Working</div>
-      </div>
-      <div class="cp-body">
-        <div class="cp-user reveal">
-          <div class="ava">N</div>
-          <div class="txt">fix the retry loop in the stream worker — it double-fires on timeout</div>
-        </div>
-
-        <div class="tcard reveal d1">
-          <div class="tc-top">
-            <span class="tc-check">✓</span>
-            <span class="tc-name">Bash</span>
-            <span class="tc-src">claude code</span>
-            <span class="tc-meta"><b>3:54:11</b> · 0.4 KB · 182 ms</span>
-          </div>
-          <div class="tc-body">
-            <div class="tc-req">
-              <div class="tc-lbl">request</div>
-              <div class="tc-arg">grep -n "retry" chat_stream_worker.py</div>
-            </div>
-            <div class="tc-lbl">response <span class="tc-pill ok">completed</span></div>
-            <div class="tc-res">L142:&nbsp;&nbsp;if timeout and not self._retried:</div>
-          </div>
-        </div>
-
-        <div class="tcard reveal d2">
-          <div class="tc-top">
-            <span class="tc-check">✓</span>
-            <span class="tc-name">Edit</span>
-            <span class="tc-src">claude code</span>
-            <span class="tc-meta"><b>3:54:13</b> · 1.1 KB · 96 ms</span>
-          </div>
-          <div class="tc-body">
-            <div class="tc-req">
-              <div class="tc-lbl">request <span class="diffchip"><span class="add">+2</span><span class="del">−1</span></span></div>
-              <div class="tc-arg"><span class="k">file:</span> chat_stream_worker.py</div>
-            </div>
-            <div class="tc-lbl">response <span class="tc-pill ok">applied</span></div>
-            <div class="diff">
-              <span class="ln del">- if timeout and not self._retried:</span>
-              <span class="ln add">+ if timeout and not self._retried.is_set():</span>
-              <span class="ln add">+ &nbsp;&nbsp;&nbsp;&nbsp;self._retried.set()</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="cp-stream reveal d3">
-          <div class="ava">S</div>
-          <div class="txt">Guarded the retry behind an idempotent flag — the timeout path can't re-enter now. Running the worker test<span class="cursor"></span></div>
-        </div>
-      </div>
+    <!-- Hero media: a REAL dev.bawthub.com capture. Video-ready — to swap in a
+         recorded demo, replace the <img> below with:
+         <video autoplay muted loop playsinline preload="metadata"
+                poster="/images/ui-chat-card.jpg">
+           <source src="/videos/hero-demo.webm" type="video/webm">
+           <source src="/videos/hero-demo.mp4"  type="video/mp4">
+         </video> -->
+    <div class="shot hero-shot">
+      <div class="bar"><span></span><span></span><span></span><span class="url">dev.bawthub.com/chat</span></div>
+      <img src="/images/ui-chat-card.jpg" alt="A live BawtHub chat turn: a Bash tool-call card with its command and result, rich markdown, and token count — the agent's real work, rendered as data." fetchpriority="high" />
+      <div class="shot-tag">real capture · dev.bawthub.com</div>
     </div>
   </section>
 
@@ -588,8 +503,8 @@
 
     <div class="split">
       <div class="shot">
-        <div class="bar"><span></span><span></span><span></span><span class="url">dev.bawthub.com/chat/loopy</span></div>
-        <img src="/images/ui-chat-card.jpg" alt="A live BawtHub chat turn: a Bash tool-call card with its command and result, rich inline-code markdown, and token count — the agent's work rendered as data." loading="lazy" />
+        <div class="bar"><span></span><span></span><span></span><span class="url">dev.bawthub.com/chat</span></div>
+        <img src="/images/ui-tool-call.jpg" alt="A BawtHub tool-call card: REQUEST and RESPONSE blocks, a green completed pill, and exact time / payload size / latency on the header row." loading="lazy" />
         <div class="shot-tag">real capture · dev.bawthub.com</div>
       </div>
       <div class="copy">
@@ -705,8 +620,8 @@
     </div>
     <div class="gallery">
       <figure class="gtile" style="--accent:var(--cyan)">
-        <img src="/images/ui-tool-call.jpg" alt="A tool-call card: request and response blocks, a completed pill, and exact time / payload size / latency metadata." loading="lazy" />
-        <figcaption>Tool call · request + result, timed to the ms</figcaption>
+        <img src="/images/ui-projects.jpg" alt="The BawtHub Projects &amp; Tasks board: 14 projects with color tags, open/done status counts, and assigned bots." loading="lazy" />
+        <figcaption>Tasks · projects, steps, sign-off</figcaption>
       </figure>
       <figure class="gtile" style="--accent:var(--violet)">
         <img src="/images/ui-voice.jpg" alt="The BawtHub voice interface: a glowing orb with a live transcript and call controls." loading="lazy" />
