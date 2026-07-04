@@ -86,9 +86,10 @@
   .meta-row span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
   .meta-row span b{color:var(--text);font-weight:600}
 
-  /* hero media frame — holds the real screenshot (or a swapped-in <video>) */
+  /* hero media frame — holds the real screenshot or the demo video */
   .hero-shot img{height:440px;object-fit:cover;object-position:top left}
-  .hero-shot video{display:block;width:100%;height:440px;object-fit:cover;object-position:top left}
+  .hero-shot video{display:block;width:100%;height:auto;background:#070d18}
+  .hero-shot.is-video{background:#070d18}
 
   /* SECTION SHELL */
   .section{margin:120px 0;position:relative}
@@ -465,17 +466,18 @@
       </div>
     </div>
 
-    <!-- Hero media: a REAL dev.bawthub.com capture. Video-ready — to swap in a
-         recorded demo, replace the <img> below with:
-         <video autoplay muted loop playsinline preload="metadata"
-                poster="/images/ui-chat-card.jpg">
-           <source src="/videos/hero-demo.webm" type="video/webm">
-           <source src="/videos/hero-demo.mp4"  type="video/mp4">
-         </video> -->
-    <div class="shot hero-shot">
-      <div class="bar"><span></span><span></span><span></span><span class="url">dev.bawthub.com/chat</span></div>
-      <img src="/images/ui-chat-card.jpg" alt="A live BawtHub chat turn: a Bash tool-call card with its command and result, rich markdown, and token count — the agent's real work, rendered as data." fetchpriority="high" />
-      <div class="shot-tag">real capture · dev.bawthub.com</div>
+    <!-- Hero media: a REAL screen recording of a live BawtHub turn rendering
+         tool calls + results. Autoplay/muted/loop; click it for full-screen
+         (the lightbox clones it with controls). It carries the app's own
+         browser chrome, so no outer .bar frame. -->
+    <div class="shot hero-shot is-video">
+      <video autoplay muted loop playsinline preload="metadata"
+             poster="/images/hero-poster.jpg"
+             aria-label="A live BawtHub chat turn rendering tool calls and their results in real time">
+        <source src="/videos/turn-view.webm" type="video/webm" />
+        <source src="/videos/turn-view.mp4"  type="video/mp4" />
+      </video>
+      <div class="shot-tag">live turn · app.bawthub.com</div>
     </div>
   </section>
 
