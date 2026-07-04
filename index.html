@@ -182,6 +182,13 @@
   .shot .bar span:nth-child(3){background:rgba(101,232,155,.7)}
   .shot .bar .url{margin-left:10px;font-family:var(--mono);font-size:11px;color:var(--dim)}
   .shot-tag{position:absolute;left:16px;bottom:16px;font-family:var(--mono);font-size:11px;color:#cde0ff;background:rgba(5,10,19,.82);border:1px solid var(--line);border-radius:8px;padding:6px 11px;backdrop-filter:blur(6px)}
+  /* SURFACE GALLERY */
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .gtile{margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#070d18;box-shadow:0 20px 60px rgba(0,0,0,.4);transition:transform .2s,border-color .2s}
+  .gtile:hover{transform:translateY(-3px);border-color:var(--line-strong)}
+  .gtile img{display:block;width:100%;height:230px;object-fit:cover;object-position:top left}
+  .gtile figcaption{padding:13px 16px;font-size:12.5px;color:var(--muted);font-family:var(--mono);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .gtile figcaption::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent,var(--cyan));box-shadow:0 0 8px var(--accent,var(--cyan))}
   .split{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
   .split.rev{grid-template-columns:.85fr 1.15fr}
   .split .copy h3{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px}
@@ -468,7 +475,7 @@
     <div>
       <div class="eyebrow"><span class="dot"></span> Self-hosted · Always-on · Still private</div>
       <h1>Watch the agents<br/><span class="accent">actually work.</span></h1>
-      <p class="lede">BawtHub is a self-hosted, always-on family of <b>real coding agents</b> you steer by <b>watching them work</b> — every tool call and its result, rendered live. Not a message fired into a black box. You correct by seeing, not by hoping.</p>
+      <p class="lede">A self-hosted, always-on family of <b>real coding agents</b> you steer by <b>watching them work</b> — every tool call and its result, live. Not a message fired into a black box.</p>
       <div class="actions">
         <a class="cta" href="https://github.com/zenoran/llm-bawt" target="_blank" rel="noopener">
           <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -546,9 +553,7 @@
   <div class="bet" id="observe">
     <div class="tag">// the contrarian bet</div>
     <h2><span class="hide">Most agent tools hide the work.</span><br/><span class="show">We show it.</span></h2>
-    <p>The dominant agentic-tool UX abstracts the process: a spinner, a <em style="font-style:italic">"thinking…"</em>, a collapsed log you have to dig for, a clean final diff. Cursor, Copilot Workspace, the Devin demo — they hide the guts because the guts look messy, and they're optimizing for <b>demo-comfort</b>.</p>
-    <p>BawtHub makes the opposite bet: <b>the process is the product.</b> The failure mode of agentic coding isn't "it can't code" — it's that it <b>confidently did the wrong thing three steps deep and you didn't notice</b>. Hiding the work optimizes for the demo. Showing it optimizes for the developer actually doing the work.</p>
-    <p class="punch">No IDE does this, because IDEs are built around a <em>human typing</em> with the agent bolted on. BawtHub is built around the <em>agent working</em>, with visibility as the primary surface. Different center of gravity — that's why it doesn't look like anything else.</p>
+    <p class="punch">Spinner, "thinking…", a clean final diff. The industry hides the guts for demo-comfort. We bet the opposite: <em>the process is the product.</em></p>
 
     <div class="vs">
       <div class="vs-col them">
@@ -578,8 +583,7 @@
   <section class="section">
     <div class="section-head">
       <div class="kicker">The guts, on purpose</div>
-      <h2>This is a real turn. <em>Nothing staged.</em></h2>
-      <p class="lede2">Every backend — Claude Code, Codex, OpenClaw, native tool-loop — streams into one surface. A tool call isn't a log line you go hunting for; it's a <b>card you watch fill in</b>, request and response, keyed to the same turn.</p>
+      <h2>A tool call is a card. <em>Not a spinner.</em></h2>
     </div>
 
     <div class="split">
@@ -589,8 +593,6 @@
         <div class="shot-tag">real capture · dev.bawthub.com</div>
       </div>
       <div class="copy">
-        <h3>A tool call is a card, not a spinner.</h3>
-        <p>Name, source backend, and the exact request. The result renders in the same card as it lands. Bot replies are full markdown — inline code, diffs, lists — because you're reading real work, not a status blurb.</p>
         <div class="annots">
           <div class="annot"><span class="n">tool</span><span><b>Name + backend</b> — <code>Bash</code> via <code>claude code</code>, with a green check when it completes.</span></div>
           <div class="annot"><span class="n">args</span><span><b>The actual command</b> and its output, verbatim. No "ran a command" abstraction.</span></div>
@@ -605,14 +607,13 @@
     <div class="section-head">
       <div class="kicker">An always-on team</div>
       <h2>Not a chatbot. A <em>family of agents</em> sharing one box.</h2>
-      <p class="lede2">Multiple named agents, one filesystem, working in parallel — and you watch the whole board. Snark reviews a diff on <code style="font-family:var(--mono);font-size:14px;background:rgba(0,0,0,.3);padding:1px 6px;border-radius:5px;color:#dde7f7">claude-fable-5</code>; Caid takes the UI on <code style="font-family:var(--mono);font-size:14px;background:rgba(0,0,0,.3);padding:1px 6px;border-radius:5px;color:#dde7f7">claude-opus</code>; Loopy holds the context. Different models, one workspace, all live in the Relay.</p>
+      <p class="lede2">Multiple named agents, one filesystem, different models — working in parallel while you watch the whole board.</p>
     </div>
 
     <div class="split rev" style="margin-bottom:56px">
       <div class="copy">
         <h3>The Relay: every agent, every turn, live.</h3>
-        <p>A running timeline of what the whole team is doing right now. Each card carries the <b>tool count, duration, token/context pressure, and model</b> — with a live status pill (working, done, needs attention). The review queue sits on the right: agents mark work <b>ready for review</b>, and only you approve.</p>
-        <p>Close your laptop. The agents keep working. Every "agentic dev" competitor dies when your machine sleeps — this one runs on hardware you own, <b>24/7</b>.</p>
+        <p>Tool count, duration, token pressure, model — on every card. A review queue only <b>you</b> approve. Close your laptop; they keep working, <b>24/7</b>, on hardware you own.</p>
       </div>
       <div class="shot">
         <div class="bar"><span></span><span></span><span></span><span class="url">dev.bawthub.com/tasks</span></div>
@@ -696,34 +697,56 @@
     </div>
   </section>
 
+  <!-- SURFACE GALLERY -->
+  <section class="section" id="surfaces">
+    <div class="section-head">
+      <div class="kicker">Every surface, same guts</div>
+      <h2>Chat, voice, tasks — <em>one system</em>.</h2>
+    </div>
+    <div class="gallery">
+      <figure class="gtile" style="--accent:var(--cyan)">
+        <img src="/images/ui-tool-call.jpg" alt="A tool-call card: request and response blocks, a completed pill, and exact time / payload size / latency metadata." loading="lazy" />
+        <figcaption>Tool call · request + result, timed to the ms</figcaption>
+      </figure>
+      <figure class="gtile" style="--accent:var(--violet)">
+        <img src="/images/ui-voice.jpg" alt="The BawtHub voice interface: a glowing orb with a live transcript and call controls." loading="lazy" />
+        <figcaption>Voice · sub-second STT/TTS, hotword</figcaption>
+      </figure>
+      <figure class="gtile" style="--accent:var(--teal)">
+        <img src="/images/ui-home.jpg" alt="The BawtHub home launcher: a flip clock and tiles for voice, chat, avatar, tools, docker, tasks." loading="lazy" />
+        <figcaption>Home · the cockpit, self-hosted</figcaption>
+      </figure>
+    </div>
+  </section>
+
   <!-- WHAT IT ACTUALLY IS -->
   <section class="section" id="whatis">
     <div class="section-head">
       <div class="kicker">The mental model</div>
       <h2>A remote dev laptop, with <em>agents at the keyboard</em>.</h2>
-      <p class="lede2">The cleanest way to picture it: a developer's laptop — except remote, always-on, and agent-operated. A filesystem to edit, a dev server to test locally, then commit and push. Same shape, with a team of agents doing the typing.</p>
+      <p class="lede2">A developer's laptop — except remote, always-on, and agent-operated.</p>
     </div>
 
     <div class="whatis">
       <div class="wi" style="--accent:var(--emerald)">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
         <h4>It runs 24/7.</h4>
-        <p>Close your laptop; the agents keep going. Long jobs finish while you're away. Every competitor that lives in <b>your</b> editor dies when your machine sleeps.</p>
+        <p>Close your laptop; the agents keep going. Competitors that live in <b>your</b> editor die when your machine sleeps.</p>
       </div>
       <div class="wi" style="--accent:var(--cyan)">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="7" cy="7" r="0"/></svg></div>
         <h4>One shared filesystem.</h4>
-        <p>The agents share a single workspace across bridges — a <b>team</b>, not one task-runner boxed in a sandbox. One agent's commit is the next one's starting point.</p>
+        <p>A single workspace across bridges — a <b>team</b>, not one task-runner in a sandbox. One agent's commit is the next one's start.</p>
       </div>
       <div class="wi" style="--accent:var(--violet)">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <h4>You control it by chatting.</h4>
-        <p>The workspace is whatever you point it at — your project, or BawtHub's own source. You steer in plain language and <b>watch the work land</b>.</p>
+        <p>Point it at any project. Steer in plain language and <b>watch the work land</b>.</p>
       </div>
       <div class="wi" style="--accent:var(--gold)">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8"/><path d="M2 17h20M8 21h8"/></svg></div>
         <h4>What they build runs on the host.</h4>
-        <p>BawtHub is the <b>cockpit, not your prod host</b>. Agents commit and push to your repo; your real deploy is your own CI. The workshop is not the product.</p>
+        <p>BawtHub is the <b>cockpit, not your prod host</b>. Agents push to your repo; your real deploy is your own CI.</p>
       </div>
     </div>
   </section>
@@ -733,7 +756,7 @@
     <div class="section-head">
       <div class="kicker">How it's wired</div>
       <h2>One API. <em>Every model.</em> Every surface.</h2>
-      <p class="lede2">llm-bawt is the OpenAI-compatible spine. BawtHub is the web/voice frontend. Agent backends plug in over a Redis-backed bridge with streaming tool events. Everything funnels into the same memory layer.</p>
+      <p class="lede2">One OpenAI-compatible spine. Every model and agent backend plugs in; everything funnels into the same memory.</p>
     </div>
 
     <div class="stack">
@@ -800,7 +823,7 @@
     <div class="section-head">
       <div class="kicker">Agent task system</div>
       <h2>Plan, dispatch, <em>review</em>.</h2>
-      <p class="lede2">Projects are markdown definitions of a component. Tasks are work items under them. An agent refines the plan, dispatches it to a bot in a clean context, and the result lands in a dashboard waiting for your sign-off. Agents mark work for review — <b>only you mark it done</b>.</p>
+      <p class="lede2">An agent refines the plan, a bot executes it in clean context, you sign off. Agents mark work for review — <b>only you mark it done</b>.</p>
     </div>
 
     <div class="flow">
@@ -842,7 +865,7 @@
     <div class="section-head">
       <div class="kicker">Why nothing else is this</div>
       <h2>The honest, defensible <em>intersection</em>.</h2>
-      <p class="lede2">Strip the hype. Six properties, all at once. Take any one away and it already exists somewhere else — the last one is the one nobody ships.</p>
+      <p class="lede2">Six properties, all at once. Drop any one and it already exists elsewhere.</p>
     </div>
 
     <div class="why-grid">
@@ -871,23 +894,22 @@
     <div class="section-head">
       <div class="kicker">Also true, just not the headline</div>
       <h2>Real features, <em>demoted on purpose</em>.</h2>
-      <p class="lede2">These matter — they're just not the thing. Continuity, memory, and voice are the comfortable furniture around the actual bet.</p>
     </div>
     <div class="feat">
       <div class="fcard c1">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
         <h4>One conversation, every device</h4>
-        <p>Web, voice, and CLI hit the same session. Start a thread in the browser, continue it from the terminal — same bot, same memory.</p>
+        <p>Web, voice, CLI — same session. Type in the browser, continue in the terminal.</p>
       </div>
       <div class="fcard c2">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"/><path d="M9 20h6"/></svg></div>
         <h4>Memory that persists</h4>
-        <p>Postgres + pgvector. Semantic memories that decay unless reinforced, contradictions resolved, per-bot spaces plus a shared pool. Loopy remembers last week.</p>
+        <p>Postgres + pgvector. Facts decay unless reinforced. Loopy remembers last week.</p>
       </div>
       <div class="fcard c3">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M7 6v12M17 6v12M2 10v4M22 10v4"/></svg></div>
         <h4>Sub-second voice</h4>
-        <p>Low-latency STT/TTS with hotword detection and a 3D avatar. Talk to any bot; it talks back. Voice was the seed the whole UI grew from.</p>
+        <p>Low-latency STT/TTS, hotword, a 3D avatar. Talk to any bot; it talks back.</p>
       </div>
     </div>
   </section>
@@ -903,39 +925,39 @@
     <div class="section-head">
       <div class="kicker">Origin</div>
       <h2>It started as a <em>CLI</em>.</h2>
-      <p class="lede2">BawtHub didn't start as a product. It grew, piece by piece, from a one-line shell command into a self-hosted platform where you watch a team of agents build software. Same core API the whole way.</p>
+      <p class="lede2">From a one-line shell command to a team of agents you watch build software. Same core API the whole way.</p>
     </div>
 
     <div class="timeline">
       <div class="tl-item a1">
         <div class="tl-era">v0 · CLI</div>
         <h4>One command, one bot.</h4>
-        <p><code>llm -b loopy "what's up"</code> — local, file-based history. The whole thing was a CLI for chatting with LLMs. The idea of <b>named bots with their own prompts</b> was there from day one.</p>
+        <p><code>llm -b loopy "what's up"</code> — local, file-based history. <b>Named bots with their own prompts</b>, from day one.</p>
       </div>
       <div class="tl-item a2">
         <div class="tl-era">v1 · llm-bawt server</div>
         <h4>One API, every model.</h4>
-        <p>Server-side backend. Same bots, reachable from any machine. Every provider — Claude, OpenAI, Grok, local GGUF, Ollama, vLLM — merged behind a <b>single OpenAI-compatible API</b>. Memory moved into Postgres + pgvector.</p>
+        <p>Every provider — Claude, OpenAI, Grok, local GGUF, Ollama, vLLM — behind <b>one OpenAI-compatible API</b>. Memory into Postgres + pgvector.</p>
       </div>
       <div class="tl-item a3">
         <div class="tl-era">v2 · unmute → BawtHub</div>
         <h4>Voice. Then a real UI.</h4>
-        <p>Started as <code>unmute</code> — a realtime voice chat framework. Low-latency STT, TTS, hotword. The web UI grew around it and became the home; voice never went away.</p>
+        <p>Born as <code>unmute</code>, a realtime voice framework — STT, TTS, hotword. The web UI grew around it; voice never went away.</p>
       </div>
       <div class="tl-item a4">
         <div class="tl-era">v3 · agent bridges</div>
         <h4>Agents in the same chat.</h4>
-        <p>Started with <b>OpenClaw</b>. Then the Claude Code SDK over the same bridge. Then Codex. Plus native tool-loop on the non-agent bots. The hard problem, from the start: <b>streaming tool calls + results</b> from every backend into one UI.</p>
+        <p>OpenClaw, then the Claude Code SDK, then Codex — one bridge pattern. The hard problem: <b>streaming tool calls + results</b> into one UI.</p>
       </div>
       <div class="tl-item a5">
         <div class="tl-era">v4 · task system</div>
         <h4>Projects, tasks, sign-off.</h4>
-        <p>Plan a project in markdown. Drop a task. An agent refines it. A bot executes in clean context. You review. The agents themselves call MCP tools to manage tasks, pull history, and ping each other.</p>
+        <p>Plan in markdown, dispatch to a bot, review. Agents manage their own tasks via MCP — and ping each other.</p>
       </div>
       <div class="tl-item a6">
         <div class="tl-era">v5 · observable agentic development</div>
         <h4>Make the work the surface.</h4>
-        <p>The Relay. Turn-card metadata — exact time, latency, token/context, model. <b>+/− diff chips</b> on every edit. Sub-agent tools nested under their parent. Live-streamed questions and approvals. The crown jewel, and why it's still private: <b>you watch the agents work.</b></p>
+        <p>The Relay: live turn metadata, <b>+/− diff chips</b>, nested sub-agent tools, streamed approvals. The crown jewel — <b>you watch the agents work.</b></p>
       </div>
     </div>
   </section>
@@ -945,7 +967,7 @@
     <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
     <div>
       <h4>Still private — and honest about it.</h4>
-      <p>This is a single-user, self-hosted system under active development. The observability layer took hundreds of hours and it's the reason the app isn't open to the public yet. The code is on GitHub; the running instance is <b>Nick's own box, building itself</b>. The membrane between the workshop and a product you'd install is a published image — not there yet, on purpose.</p>
+      <p>A single-user, self-hosted system under active development. The code is on GitHub; the running instance is <b>Nick's own box, building itself</b>. Not open to the public yet — on purpose.</p>
     </div>
   </div>
 
