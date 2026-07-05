@@ -6,12 +6,7 @@ Static HTML / CSS — no runtime, no build step.
 
 ## Layout
 
-The repo root is the site root.
-
-| URL | Source |
-|---|---|
-| `/` | `index.html` — marketing landing page |
-| `/story.html` | `story.html` — origin narrative |
+The repo root is the site root. Single-page site — all content in `index.html`.
 
 ## Deploy
 
