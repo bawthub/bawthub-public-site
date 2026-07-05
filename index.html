@@ -43,8 +43,10 @@
     --mono:'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  html,body{margin:0;background:radial-gradient(1200px 720px at 80% -10%, #1a2750 0%, transparent 55%),radial-gradient(900px 560px at 0% 0%, #2a1758 0%, transparent 60%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);background-color:#050a13;color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  *{background-repeat:no-repeat !important}
+  .noise::before,.grid-bg::after{background-repeat:repeat !important}
+  html{scroll-behavior:smooth;color-scheme:dark}
+  html,body{margin:0;background:radial-gradient(1200px 720px at 80% -10%, #1a2750 0%, transparent 55%),radial-gradient(900px 560px at 0% 0%, #2a1758 0%, transparent 60%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);background-color:#050a13 !important;color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   body{min-height:100vh;overflow-x:hidden}
   a{color:inherit;text-decoration:none}
   code{font-family:var(--mono)}
@@ -74,8 +76,8 @@
   .eyebrow{display:inline-flex;gap:10px;align-items:center;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);color:#cde0ff;font-size:13px;font-weight:500;margin-bottom:24px}
   .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 2.4s infinite}
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
-  h1{margin:0 0 22px;font-size:clamp(44px,6.6vw,78px);line-height:.95;letter-spacing:-.045em;font-weight:800;background:linear-gradient(180deg,#fff 0%,#bccae3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  h1 .accent{background:linear-gradient(120deg,var(--cyan),var(--violet) 60%,var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  h1{margin:0 0 22px;font-size:clamp(44px,6.6vw,78px);line-height:.95;letter-spacing:-.045em;font-weight:800;color:#fff}
+  h1 .accent{color:var(--cyan)}
   .lede{color:var(--muted);font-size:19px;line-height:1.6;max-width:568px;margin-bottom:30px}
   .lede b{color:#dde7f7;font-weight:600}
   .actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
@@ -86,6 +88,9 @@
   .meta-row span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
   .meta-row span b{color:var(--text);font-weight:600}
 
+  /* hero text ambient glow */
+  .hero > div:first-child{position:relative;background:radial-gradient(ellipse 70% 55% at 28% 30%,rgba(79,209,255,.06),transparent 65%),radial-gradient(ellipse 45% 50% at 72% 60%,rgba(139,92,246,.04),transparent 60%)}
+
   /* hero media frame — holds the real screenshot or the demo video */
   .hero-shot img{height:440px;object-fit:cover;object-position:top left}
   .hero-shot video{display:block;width:100%;height:auto;background:#070d18}
@@ -93,10 +98,10 @@
 
   /* SECTION SHELL */
   .section{margin:120px 0;position:relative}
-  .section-head{margin-bottom:44px;max-width:780px}
+  .section-head{margin-bottom:44px;max-width:780px;padding:36px 48px 20px;margin-left:-48px;margin-right:-48px;border-radius:32px;background:radial-gradient(ellipse 75% 90% at 22% 15%,rgba(79,209,255,.05),transparent 62%),radial-gradient(ellipse 55% 80% at 78% 45%,rgba(139,92,246,.035),transparent 60%)}
   .kicker{font-size:13px;color:var(--cyan);font-weight:600;letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px}
-  .section h2{font-size:clamp(32px,4vw,50px);font-weight:800;margin:0 0 16px;line-height:1.05;letter-spacing:-.03em;background:linear-gradient(180deg,#fff,#bccae3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .section h2 em{font-style:normal;background:linear-gradient(120deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .section h2{font-size:clamp(32px,4vw,50px);font-weight:800;margin:0 0 16px;line-height:1.05;letter-spacing:-.03em;color:#fff}
+  .section h2 em{font-style:normal;color:var(--cyan)}
   .section .lede2{color:var(--muted);font-size:18px;line-height:1.62;max-width:680px}
   .section .lede2 b{color:#dde7f7;font-weight:600}
 
@@ -105,7 +110,7 @@
   .bet .tag{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--pink);margin-bottom:22px}
   .bet h2{font-size:clamp(30px,4.4vw,56px);line-height:1.04;letter-spacing:-.035em;font-weight:800;margin:0 0 24px;max-width:900px}
   .bet h2 .hide{color:var(--dim)}
-  .bet h2 .show{background:linear-gradient(120deg,var(--cyan),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .bet h2 .show{color:var(--cyan)}
   .bet p{color:var(--muted);font-size:18px;line-height:1.65;max-width:720px;margin:0 0 14px}
   .bet p b{color:#eaf1ff;font-weight:600}
   .bet .punch{color:#eaf1ff;font-size:19px;font-weight:600;margin-top:24px;max-width:760px}
@@ -118,7 +123,7 @@
   .vs-col h3{margin:0 0 6px;font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
   .vs-col.us h3{color:var(--cyan)}
   .vs-col .sub{font-size:20px;font-weight:700;margin-bottom:22px;color:var(--text);letter-spacing:-.01em}
-  .vs-col.us .sub{background:linear-gradient(120deg,var(--cyan),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .vs-col.us .sub{color:var(--cyan)}
   .vs-col ul{margin:0;padding:0;list-style:none;display:grid;gap:14px}
   .vs-col li{display:grid;grid-template-columns:20px 1fr;gap:11px;align-items:start;color:var(--muted);font-size:15px;line-height:1.5}
   .vs-col li b{color:var(--text);font-weight:600}
@@ -137,7 +142,7 @@
   .shot .bar .url{margin-left:10px;font-family:var(--mono);font-size:11px;color:var(--dim)}
   .shot-tag{position:absolute;left:16px;bottom:16px;font-family:var(--mono);font-size:11px;color:#cde0ff;background:rgba(5,10,19,.82);border:1px solid var(--line);border-radius:8px;padding:6px 11px;backdrop-filter:blur(6px)}
   /* SURFACE GALLERY */
-  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
   .gtile{margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#070d18;box-shadow:0 20px 60px rgba(0,0,0,.4);transition:transform .2s,border-color .2s}
   .gtile:hover{transform:translateY(-3px);border-color:var(--line-strong)}
   .gtile img{display:block;width:100%;height:230px;object-fit:cover;object-position:top left}
@@ -179,7 +184,8 @@
   .bot:hover{transform:translateY(-2px);border-color:var(--line-strong)}
   .bot::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,var(--accent,var(--violet)),transparent 50%);opacity:.16;pointer-events:none}
   .bot-head{display:flex;align-items:center;gap:13px;margin-bottom:12px;position:relative}
-  .bot-ava{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2,var(--accent)));font-weight:800;font-size:17px;color:#0a1322;box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.15)}
+  .bot-ava{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.10),inset 0 0 0 1px rgba(255,255,255,.06),0 2px 8px rgba(0,0,0,.38);overflow:hidden;flex-shrink:0}
+  .bot-ava img{width:28px;height:28px;user-select:none;pointer-events:none}
   .bot-name{font-size:19px;font-weight:700;letter-spacing:-.01em}
   .bot-role{font-size:12px;color:var(--muted);font-weight:500}
   .bot p{margin:0 0 14px;color:#cdd9eb;font-size:13.5px;line-height:1.5;position:relative;min-height:56px}
@@ -247,7 +253,7 @@
   /* QUOTE */
   .quote{padding:52px 48px;border-radius:24px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(79,209,255,.04));text-align:center;max-width:900px;margin:120px auto}
   .quote p{font-size:clamp(22px,2.6vw,32px);line-height:1.4;font-weight:600;margin:0 0 18px;letter-spacing:-.02em;color:#e9eeff}
-  .quote p em{font-style:normal;background:linear-gradient(120deg,var(--cyan),var(--violet) 70%,var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .quote p em{font-style:normal;color:var(--cyan)}
   .quote .sig{color:var(--dim);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
 
   /* ORIGIN TIMELINE */
@@ -283,6 +289,7 @@
 
   /* RESPONSIVE */
   @media(max-width:980px){
+    .section-head{margin-left:-24px;margin-right:-24px}
     .hero{grid-template-columns:1fr;gap:38px;padding-bottom:8px}
     .nav-links{display:none}
     .bots{grid-template-columns:repeat(2,1fr)}
@@ -300,6 +307,7 @@
     .bet{padding:44px 28px}
   }
   @media(max-width:600px){
+    .section-head{margin-left:0;margin-right:0;padding:28px 20px 14px}
     .bots,.feat,.gallery{grid-template-columns:1fr}
     .shell{padding:20px 18px 60px}
     .nav{margin-bottom:36px;gap:12px}
@@ -444,11 +452,10 @@
                architecture/ realigned to match.
   2026-05-13 — Full rewrite of marketing site (loopy@claude-sonnet).
                Replaced emoji-brick AI-startup voice with the actual
-               story. Routing fixed (NPM 38 -> 10.0.2.36:80).
+               story. Routing fixed.
   2026-05-12 — Original "coming soon" placeholder (previous, dumber model).
 
-  See /story.html for the rendered origin narrative and /architecture/
-  for the full system map.
+  See /story.html for the rendered origin narrative.
   =====================================================================
 -->
 
@@ -593,7 +600,7 @@
     <div class="bots">
       <div class="bot" style="--accent:#4fd1ff;--accent-2:#0ea5e9">
         <div class="bot-head">
-          <div class="bot-ava">L</div>
+          <div class="bot-ava" style="background:radial-gradient(circle at 34% 24%,rgba(199,211,234,0.2),transparent 50%),linear-gradient(to bottom right,rgba(26,40,69,0.22) 0%,rgba(2,6,23,0.94) 46%,rgba(0,0,0,0.96) 100%)"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f440.svg" alt="" loading="lazy"/></div>
           <div>
             <div class="bot-name">loopy</div>
             <div class="bot-role">Generalist · home-ops · default driver</div>
@@ -605,7 +612,7 @@
 
       <div class="bot" style="--accent:#ff8b4f;--accent-2:#dc4a1c">
         <div class="bot-head">
-          <div class="bot-ava">S</div>
+          <div class="bot-ava" style="background:radial-gradient(circle at 34% 24%,rgba(224,190,244,0.2),transparent 50%),linear-gradient(to bottom right,rgba(68,0,106,0.22) 0%,rgba(2,6,23,0.94) 46%,rgba(0,0,0,0.96) 100%)"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f988.svg" alt="" loading="lazy"/></div>
           <div>
             <div class="bot-name">snark</div>
             <div class="bot-role">Code review · refactor surgeon</div>
@@ -617,7 +624,7 @@
 
       <div class="bot" style="--accent:#65e89b;--accent-2:#0d9963">
         <div class="bot-head">
-          <div class="bot-ava">C</div>
+          <div class="bot-ava" style="background:radial-gradient(circle at 34% 24%,rgba(244,190,190,0.2),transparent 50%),linear-gradient(to bottom right,rgba(109,0,0,0.22) 0%,rgba(2,6,23,0.94) 46%,rgba(0,0,0,0.96) 100%)"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9f2.svg" alt="" loading="lazy"/></div>
           <div>
             <div class="bot-name">caid</div>
             <div class="bot-role">Frontend · UI craft</div>
@@ -629,7 +636,7 @@
 
       <div class="bot" style="--accent:#ff63d8;--accent-2:#a21caf">
         <div class="bot-head">
-          <div class="bot-ava">V</div>
+          <div class="bot-ava" style="background:radial-gradient(circle at 34% 24%,rgba(215,215,219,0.2),transparent 50%),linear-gradient(to bottom right,rgba(82,82,91,0.22) 0%,rgba(2,6,23,0.94) 46%,rgba(0,0,0,0.96) 100%)"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26a1.svg" alt="" loading="lazy"/></div>
           <div>
             <div class="bot-name">vex</div>
             <div class="bot-role">Security · pentest · cred custody</div>
@@ -641,7 +648,7 @@
 
       <div class="bot" style="--accent:#8b5cf6;--accent-2:#4f46e5">
         <div class="bot-head">
-          <div class="bot-ava">G</div>
+          <div class="bot-ava" style="background:radial-gradient(circle at 34% 24%,rgba(241,240,192,0.2),transparent 50%),linear-gradient(to bottom right,rgba(54,53,12,0.22) 0%,rgba(2,6,23,0.94) 46%,rgba(0,0,0,0.96) 100%)"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f528.svg" alt="" loading="lazy"/></div>
           <div>
             <div class="bot-name">gavel</div>
             <div class="bot-role">Commit arbiter</div>
@@ -677,12 +684,16 @@
         <figcaption>Tasks · projects, steps, sign-off</figcaption>
       </figure>
       <figure class="gtile" style="--accent:var(--violet)">
-        <img src="/images/ui-voice.jpg" alt="The BawtHub voice interface: a glowing orb with a live transcript and call controls." loading="lazy" />
+        <img src="/images/ui-voice.webp" alt="The BawtHub voice interface: a glowing orb with a live transcript and call controls." loading="lazy" />
         <figcaption>Voice · sub-second STT/TTS, hotword</figcaption>
       </figure>
       <figure class="gtile" style="--accent:var(--teal)">
         <img src="/images/ui-home.jpg" alt="The BawtHub home launcher: a flip clock and tiles for voice, chat, avatar, tools, docker, tasks." loading="lazy" />
         <figcaption>Home · the cockpit, self-hosted</figcaption>
+      </figure>
+      <figure class="gtile" style="--accent:var(--amber)">
+        <img src="/images/ui-tables.jpg" alt="A BawtHub chat showing Loopy rendering a rich comparison table — Harness plan mode vs. Task system — with inline code, emoji markers, and structured analysis." loading="lazy" />
+        <figcaption>Chat · rich tables, code, structured output</figcaption>
       </figure>
     </div>
   </section>
@@ -993,7 +1004,6 @@
         <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
         llm-bawt · backend
       </a>
-      <a href="/architecture/">Architecture</a>
       <a href="/story.html">Story</a>
     </div>
   </div>

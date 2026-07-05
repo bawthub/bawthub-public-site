@@ -26,6 +26,7 @@
     --mono:'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
+  *{background-repeat:no-repeat !important}
   html,body{margin:0;background:radial-gradient(900px 600px at 20% -10%,#1a2750 0%,transparent 55%),radial-gradient(760px 520px at 100% 0%,#2a1758 0%,transparent 60%),linear-gradient(180deg,#0a1322 0%,#050a13 60%);color:var(--text);font-family:var(--sans);line-height:1.7;-webkit-font-smoothing:antialiased}
   a{color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(79,209,255,.3)}
   a:hover{border-bottom-color:var(--cyan)}
@@ -35,8 +36,8 @@
   .brand .logo{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:conic-gradient(from 220deg,var(--violet),var(--cyan),var(--teal),var(--violet));position:relative}
   .brand .logo::after{content:"";position:absolute;inset:3px;border-radius:7px;background:#0a1322}
   .brand .logo span{position:relative;z-index:1;font-weight:800;font-size:14px}
-  h1{font-size:52px;line-height:1.02;letter-spacing:-.04em;margin:0 0 16px;font-weight:800;background:linear-gradient(180deg,#fff,#bccae3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  h1 .accent{background:linear-gradient(120deg,var(--cyan),var(--violet) 60%,#ff63d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  h1{font-size:52px;line-height:1.02;letter-spacing:-.04em;margin:0 0 16px;font-weight:800;color:#fff}
+  h1 .accent{color:var(--cyan)}
   .sub{color:var(--muted);font-size:19px;margin:0 0 48px}
   h2{font-size:25px;letter-spacing:-.015em;margin:56px 0 12px;color:#fff;font-weight:700}
   h2 .era{display:inline-block;font-family:var(--mono);font-size:12px;color:var(--cyan);font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:rgba(79,209,255,.1);border:1px solid rgba(79,209,255,.25);margin-right:12px;vertical-align:middle}
@@ -122,7 +123,7 @@
 
   <div class="meta">
     <span>Last updated: 2026-07-04</span>
-    <span><a href="/">home</a> · <a href="/architecture/">architecture</a> · <a href="https://github.com/zenoran/llm-bawt">repo</a></span>
+    <span><a href="/">home</a> · <a href="https://github.com/zenoran/llm-bawt">repo</a></span>
   </div>
 </div>
 </body>
